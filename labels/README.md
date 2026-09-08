@@ -76,6 +76,11 @@ python notebooks/label.py --block 1 --name 홍길동
 
 **단축키** — F1 화면 회전 · Ctrl+Z 직전 취소 · Esc 종료 (중간에 꺼도 이어서 됨)
 
+**잘못 쳤을 때 (뒤로 가기)**
+- **Ctrl+Z** → 직전 사진으로 돌아가고 아까 친 값이 입력칸에 채워짐. 고쳐서 Enter. CSV 의 그 줄은 자동으로 지워짐
+- 여러 장 전으로 가려면 Ctrl+Z 를 그만큼. 중간 것들은 값이 채워져 있으니 Enter 만 치면 됨
+- **창을 이미 닫았으면** → `labels/labels_block<N>.csv` 를 메모장으로 열어 그 줄을 지우고 다시 실행하면 지운 사진만 다시 뜸. 값을 직접 고쳐도 됨
+
 ## 끝나면
 
 `labels/labels_block<N>.csv` 가 생김. 그 파일만 커밋·푸시:
