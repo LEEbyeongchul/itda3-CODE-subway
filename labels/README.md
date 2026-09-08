@@ -16,15 +16,15 @@
 python notebooks/label.py --block 1 --name 홍길동
 ```
 
-| 블록 | 담당 |
-| --- | --- |
-| 1 | |
-| 2 | |
-| 3 | |
-| 4 | |
-| 5 | |
+| 블록 | 담당 | 실행 명령 |
+| --- | --- | --- |
+| 1 | 승아 | `python notebooks/label.py --block 1 --name 승아` |
+| 2 | 서현 | `python notebooks/label.py --block 2 --name 서현` |
+| 3 | 민섭 | `python notebooks/label.py --block 3 --name 민섭` |
+| 4 | 서영 | `python notebooks/label.py --block 4 --name 서영` |
+| 5 | 병철 | `python notebooks/label.py --block 5 --name 병철` |
 
-(담당 정하면 위 표 채워서 커밋)
+블록당 50장, 저화질·중간·고해상도가 고르게 섞여 있음. 마감: **9/9 (수) 오전 중**
 
 창이 뜨면 **포장에 찍힌 그대로** 입력하고 Enter. 예:
 
