@@ -1,7 +1,7 @@
 # 검증셋 라벨링
 
 목적: 파이프라인 정확도를 **숫자로** 재고, 어떤 유형에서 틀리는지 알아내기. 가산점(직접 라벨링 5점) 증빙도 겸함.
-총 500장 (저화질 200 · 중간 100 · 고해상도 200, 해상도 층화 무작위 추출).
+총 1,000장 (저화질 400 · 중간 250 · 고해상도 350, 해상도 층화 무작위 추출). 1차 500장은 측정용, 2차 500장은 튜닝용.
 
 ## 준비 (한 번만)
 
@@ -17,16 +17,19 @@
 python notebooks/label.py --block 1 --name 홍길동
 ```
 
-| 블록 | 담당 | 실행 명령 |
+| 담당 | 1차 (9/9 정오까지) | 2차 (9/9 저녁 ~ 9/10 오전) |
 | --- | --- | --- |
-| 1 | 승아 | `python notebooks/label.py --block 1 --name 승아` |
-| 2 | 서현 | `python notebooks/label.py --block 2 --name 서현` |
-| 3 | 민섭 | `python notebooks/label.py --block 3 --name 민섭` |
-| 4 | 서영 | `python notebooks/label.py --block 4 --name 서영` |
-| 5 | 병철 | `python notebooks/label.py --block 5 --name 병철` |
+| 승아 | `python notebooks/label.py --block 1 --name 승아` | `python notebooks/label.py --block 6 --name 승아` |
+| 서현 | `python notebooks/label.py --block 2 --name 서현` | `python notebooks/label.py --block 7 --name 서현` |
+| 민섭 | `python notebooks/label.py --block 3 --name 민섭` | `python notebooks/label.py --block 8 --name 민섭` |
+| 서영 | `python notebooks/label.py --block 4 --name 서영` | `python notebooks/label.py --block 9 --name 서영` |
+| 병철 | `python notebooks/label.py --block 5 --name 병철` | `python notebooks/label.py --block 10 --name 병철` |
 
-블록당 **100장** (저화질 40 · 중간 20 · 고해상도 40 내외). 마감: **9/9 (수) 중**.
-**50장 하고 한 번 쉬세요** — 연속 50분이면 뒤쪽 라벨 품질이 떨어집니다. 중간에 꺼도 이어서 됩니다.
+블록당 **100장**, 1인 2블록 = 200장. 각 블록은 저화질·중간·고해상도가 섞여 있음.
+
+- **1차 블록(1~5)은 9/9 정오까지** — 이걸로 오후에 정확도 측정·오류 분석을 돌림
+- **2차 블록(6~10)은 9/9 저녁~9/10 오전** — 튜닝용. 1차와 분리해 두면 "안 본 데이터에서 X%"를 말할 수 있음
+- **50장 하고 한 번 쉬세요.** 연속 50분이면 뒤쪽 라벨 품질이 떨어집니다. 중간에 꺼도 이어서 됩니다
 
 창이 뜨면 **포장에 찍힌 그대로** 입력하고 Enter. 예:
 
