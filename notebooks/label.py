@@ -137,15 +137,18 @@ def pop_last_row():
 root = tk.Tk()
 root.title(f"라벨링 — 블록 {args.block} · {args.name}")
 big = tkfont.Font(size=13)
-canvas = tk.Canvas(root, width=MAX_W, height=MAX_H, bg="#222")
-canvas.pack()
+# 화면 크기에 맞춰 사진 영역을 정한다 (입력칸이 화면 밖으로 잘리지 않도록). 입력부는 사진 **위**에 둔다.
+MAX_W = min(MAX_W, root.winfo_screenwidth() - 80)
+MAX_H = min(MAX_H, root.winfo_screenheight() - 240)
+entry = tk.Entry(root, font=tkfont.Font(size=16))
+entry.pack(fill="x", padx=8, pady=(8, 2))
 status = tk.Label(root, anchor="w", font=big, fg="#444")
 status.pack(fill="x", padx=8)
 hint = tk.Label(root, anchor="w", fg="#888",
                 text="보이는 그대로 입력 + 태그   2 병기 · d 일먼저 · r 회전 · t 작음 · b 흐림 · e 각인 · n 키워드없음 · s 판독불가 · ? 애매   |   F1 회전  Ctrl+Z 취소  Esc 종료")
-hint.pack(fill="x", padx=8)
-entry = tk.Entry(root, font=tkfont.Font(size=16))
-entry.pack(fill="x", padx=8, pady=6)
+hint.pack(fill="x", padx=8, pady=(0, 4))
+canvas = tk.Canvas(root, width=MAX_W, height=MAX_H, bg="#222")
+canvas.pack()
 entry.focus_set()
 
 state = {"i": 0, "rot": 0, "photo": None, "last": ""}
