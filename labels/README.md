@@ -1,7 +1,7 @@
 # 검증셋 라벨링
 
 목적: 파이프라인 정확도를 **숫자로** 재고, 어떤 유형에서 틀리는지 알아내기. 가산점(직접 라벨링 5점) 증빙도 겸함.
-총 1,000장 (저화질 400 · 중간 250 · 고해상도 350, 해상도 층화 무작위 추출). 1차 500장은 측정용, 2차 500장은 튜닝용.
+1·2차 1,000장 (저화질 400 · 중간 250 · 고해상도 350, 해상도 층화 무작위 추출) + 3차 나머지 2,352장 = 전수 3,352장. 1차 500장은 측정용, 2차 500장은 튜닝용, 3차는 추가 검증·본선용.
 
 ## 준비 (한 번만)
 
@@ -24,6 +24,16 @@ python notebooks/label.py --block 1 --name 홍길동
 | 민섭 | `python notebooks/label.py --block 3 --name 민섭` | `python notebooks/label.py --block 8 --name 민섭` |
 | 서영 | `python notebooks/label.py --block 4 --name 서영` | `python notebooks/label.py --block 9 --name 서영` |
 | 병철 | `python notebooks/label.py --block 5 --name 병철` | `python notebooks/label.py --block 10 --name 병철` |
+
+**3차 (전수, 1·2차 끝난 뒤)** — 나머지 2,352장을 블록 11~15로 나눔. 인당 약 470장, 장당 15초면 2시간.
+
+| 담당 | 3차 |
+| --- | --- |
+| 승아 | `--block 11` |
+| 서현 | `--block 12` |
+| 민섭 | `--block 13` |
+| 서영 | `--block 14` |
+| 병철 | `--block 15` |
 
 블록당 **100장**, 1인 2블록 = 200장. 각 블록은 저화질·중간·고해상도가 섞여 있음.
 
