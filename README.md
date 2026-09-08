@@ -4,6 +4,8 @@
 제3회 ITDA 연합학술제 제출용입니다.
 - 대회 규정·일정·채점 기준: [docs/ITDA3_참가안내서.md](docs/ITDA3_참가안내서.md)
 - **운영진 Q&A 확정사항** (평가셋 500장, 부분점수, `NONE-MM-DD`, 일/월/년 규칙 등): [docs/QA_확정사항.md](docs/QA_확정사항.md)
+- **전체 계획 · 일정 · 역할 · 작업 목록**: [docs/프로젝트_계획.md](docs/프로젝트_계획.md)
+- **검증셋 라벨링 방법**: [labels/README.md](labels/README.md)
 
 ---
 

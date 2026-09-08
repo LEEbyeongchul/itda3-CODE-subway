@@ -1,0 +1,225 @@
+# -*- coding: utf-8 -*-
+"""소비기한 라벨링 도구 (tkinter, 추가 설치 없음).
+
+    python notebooks/label.py --block 1 --name 홍길동
+
+labels/sample.csv 에서 내 블록의 이미지를 차례로 띄운다. 입력창에 **포장에 찍힌 그대로** 날짜를 치고 Enter.
+저장은 labels/labels_block<N>.csv 에 한 줄씩 즉시 기록되므로 중간에 꺼도 이어서 할 수 있다.
+
+입력 예시 (날짜는 보이는 그대로, 뒤에 태그를 공백으로):
+    2027.06.26            → 2027-06-26
+    25.06.26 2            → 2025-06-26, 태그 2(날짜 두 개 병기, 소비기한만 적은 것)
+    20/05/2026            → 2026-05-20 (연도가 뒤면 자동으로 일/월/년)
+    050926 d              → 2026-09-05 (d = 일이 먼저: DDMMYY)
+    30 12 23 d e          → 2023-12-30, 각인
+    06.26  또는 NONE.06.26 → NONE-06-26 (연도 없음)
+    NONE                  → 날짜 없음
+    s                     → 사람도 못 읽음 (NONE 으로 저장, 태그 s)
+
+태그 (한 글자, 여러 개 가능):
+    2  날짜 2개 이상 병기 (제조·소비 등) — 소비기한만 적을 것
+    d  일-월-년 순서 (유럽식). 2자리·6자리 입력에서만 의미 있음
+    r  라벨/글자가 90도 누움
+    t  글자가 너무 작음 · 저해상도
+    b  흐림 · 초점 안 맞음
+    e  각인 · 양각 (잉크 아님)
+    n  키워드(소비기한/유통기한/까지/BBD) 없음
+    s  판독 불가
+    ?  애매함 — 나중에 같이 검토
+
+단축키:  Enter 저장·다음 | F1 화면 90도 회전 | Ctrl+Z 직전 것 취소 | Esc 종료
+"""
+import os, re, csv, sys, argparse, datetime
+import tkinter as tk
+from tkinter import font as tkfont
+from PIL import Image, ImageOps, ImageTk
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--block", type=int, required=True)
+ap.add_argument("--name", required=True, help="라벨러 이름 (기록용)")
+ap.add_argument("--images", default="images")
+ap.add_argument("--sample", default="labels/sample.csv")
+args = ap.parse_args()
+
+OUT = f"labels/labels_block{args.block}.csv"
+FIELDS = ["block", "labeler", "image_id", "file", "raw", "year", "month", "day", "final_date", "format", "tags", "ts"]
+TAGS = set("2drtbens?")
+MAX_W, MAX_H = 1100, 820
+
+# ---------- 데이터 ----------
+with open(args.sample, encoding="utf-8") as f:
+    todo = [r for r in csv.DictReader(f) if int(r["block"]) == args.block]
+done = set()
+if os.path.exists(OUT):
+    with open(OUT, encoding="utf-8") as f:
+        done = {r["image_id"] for r in csv.DictReader(f)}
+queue = [r for r in todo if r["image_id"] not in done]
+if not todo:
+    sys.exit(f"블록 {args.block} 에 배정된 이미지가 없습니다. sample.csv 를 확인하세요.")
+print(f"블록 {args.block}: 전체 {len(todo)}장, 완료 {len(done)}장, 남은 {len(queue)}장 → {OUT}")
+
+
+def normalize(raw, tags):
+    """사람이 친 문자열 → (y, m, d, format). y 는 None 허용. 잘못되면 ValueError."""
+    s = raw.strip().upper()
+    if s in ("", "NONE", "N", "X") or "s" in tags:
+        return None, None, None, "none"
+    nums = re.findall(r"\d+", s)
+    day_first = "d" in tags
+    if len(nums) == 1:
+        t = nums[0]
+        if len(t) == 8:
+            y, m, d, fmt = int(t[:4]), int(t[4:6]), int(t[6:]), "YYYYMMDD"
+        elif len(t) == 6:
+            if day_first:
+                y, m, d, fmt = 2000 + int(t[4:]), int(t[2:4]), int(t[:2]), "DDMMYY"
+            else:
+                y, m, d, fmt = 2000 + int(t[:2]), int(t[2:4]), int(t[4:]), "YYMMDD"
+        elif len(t) == 4:
+            y, m, d, fmt = None, int(t[:2]), int(t[2:]), "MMDD"
+        else:
+            raise ValueError(f"숫자 덩어리 길이 {len(t)} 는 해석 불가")
+    elif len(nums) == 2:
+        y, m, d, fmt = None, int(nums[0]), int(nums[1]), "MM.DD"
+    else:
+        a, b, c = nums[:3]
+        if len(a) == 4:
+            y, m, d, fmt = int(a), int(b), int(c), "YYYY.MM.DD"
+        elif len(c) == 4:
+            y, m, d, fmt = int(c), int(b), int(a), "DD.MM.YYYY"
+        elif day_first:
+            y, m, d, fmt = 2000 + int(c), int(b), int(a), "DD.MM.YY"
+        else:
+            y, m, d, fmt = 2000 + int(a), int(b), int(c), "YY.MM.DD"
+    if y is not None and not (2015 <= y <= 2035):
+        raise ValueError(f"연도 {y} 가 범위 밖 — d 태그(일이 먼저)가 필요한가요?")
+    if not (1 <= m <= 12 and 1 <= d <= 31):
+        raise ValueError(f"월 {m} / 일 {d} 가 범위 밖")
+    return y, m, d, fmt
+
+
+def split_input(text):
+    toks = text.strip().split()
+    date_toks, tags = [], set()
+    for t in toks:
+        if re.search(r"\d", t) or t.upper() in ("NONE", "N", "X"):
+            date_toks.append(t)
+        elif all(ch in TAGS for ch in t):
+            tags |= set(t)
+        else:
+            raise ValueError(f"알 수 없는 토큰 '{t}'")
+    return " ".join(date_toks), tags
+
+
+def append_row(row):
+    new = not os.path.exists(OUT)
+    with open(OUT, "a", newline="", encoding="utf-8") as f:
+        wr = csv.DictWriter(f, fieldnames=FIELDS)
+        if new:
+            wr.writeheader()
+        wr.writerow(row)
+
+
+def pop_last_row():
+    with open(OUT, encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        return None
+    last = rows.pop()
+    with open(OUT, "w", newline="", encoding="utf-8") as f:
+        wr = csv.DictWriter(f, fieldnames=FIELDS)
+        wr.writeheader()
+        wr.writerows(rows)
+    return last
+
+
+# ---------- UI ----------
+root = tk.Tk()
+root.title(f"라벨링 — 블록 {args.block} · {args.name}")
+big = tkfont.Font(size=13)
+canvas = tk.Canvas(root, width=MAX_W, height=MAX_H, bg="#222")
+canvas.pack()
+status = tk.Label(root, anchor="w", font=big, fg="#444")
+status.pack(fill="x", padx=8)
+hint = tk.Label(root, anchor="w", fg="#888",
+                text="보이는 그대로 입력 + 태그   2 병기 · d 일먼저 · r 회전 · t 작음 · b 흐림 · e 각인 · n 키워드없음 · s 판독불가 · ? 애매   |   F1 회전  Ctrl+Z 취소  Esc 종료")
+hint.pack(fill="x", padx=8)
+entry = tk.Entry(root, font=tkfont.Font(size=16))
+entry.pack(fill="x", padx=8, pady=6)
+entry.focus_set()
+
+state = {"i": 0, "rot": 0, "photo": None, "last": ""}
+
+
+def show():
+    if state["i"] >= len(queue):
+        canvas.delete("all")
+        canvas.create_text(MAX_W // 2, MAX_H // 2, text=f"블록 {args.block} 완료! 수고하셨습니다.\n{OUT} 를 커밋해 주세요.", fill="white", font=big, justify="center")
+        status.config(text="끝")
+        entry.config(state="disabled")
+        return
+    r = queue[state["i"]]
+    p = os.path.join(args.images, r["file"])
+    with Image.open(p) as im:
+        if im.format in ("JPEG", "MPO"):
+            im.draft("RGB", (MAX_W, MAX_H))
+        im = ImageOps.exif_transpose(im).convert("RGB")
+        if state["rot"]:
+            im = im.rotate(state["rot"], expand=True)
+        im.thumbnail((MAX_W, MAX_H))
+        state["photo"] = ImageTk.PhotoImage(im)
+    canvas.delete("all")
+    canvas.create_image(MAX_W // 2, MAX_H // 2, image=state["photo"])
+    n_done = len(done) + state["i"]
+    status.config(text=f"[{n_done + 1}/{len(todo)}]  {r['file']}  ({r['stratum']}, {r['w']}x{r['h']})     {state['last']}")
+
+
+def submit(_=None):
+    text = entry.get()
+    r = queue[state["i"]]
+    try:
+        date_str, tags = split_input(text)
+        y, m, d, fmt = normalize(date_str, tags)
+    except ValueError as e:
+        status.config(text=f"⚠ {e}", fg="#c00")
+        return
+    ys = f"{y:04d}" if y is not None else "NONE"
+    ms = f"{m:02d}" if m is not None else "NONE"
+    ds = f"{d:02d}" if d is not None else "NONE"
+    fd = "NONE" if (y is None and m is None and d is None) else f"{ys}-{ms}-{ds}"
+    append_row({"block": args.block, "labeler": args.name, "image_id": r["image_id"], "file": r["file"],
+                "raw": text.strip(), "year": ys, "month": ms, "day": ds, "final_date": fd, "format": fmt,
+                "tags": "".join(sorted(tags)), "ts": datetime.datetime.now().isoformat(timespec="seconds")})
+    state["last"] = f"저장: {r['image_id']} → {fd} [{fmt}] {''.join(sorted(tags))}"
+    state["i"] += 1
+    state["rot"] = 0
+    entry.delete(0, "end")
+    status.config(fg="#444")
+    show()
+
+
+def undo(_=None):
+    if state["i"] == 0:
+        status.config(text="취소할 것이 없습니다", fg="#c00")
+        return
+    last = pop_last_row()
+    state["i"] -= 1
+    state["rot"] = 0
+    entry.delete(0, "end")
+    if last:
+        entry.insert(0, last["raw"])
+    state["last"] = f"취소: {last['image_id'] if last else ''}"
+    show()
+
+
+def rotate(_=None):
+    state["rot"] = (state["rot"] + 90) % 360
+    show()
+
+
+entry.bind("<Return>", submit)
+root.bind("<F1>", rotate)
+root.bind("<Control-z>", undo)
+root.bind("<Escape>", lambda e: root.destroy())
+show()
+root.mainloop()
