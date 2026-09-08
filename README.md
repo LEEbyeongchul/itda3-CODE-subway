@@ -1,120 +1,165 @@
-# ITDA 3rd 학술제 - 소비기한 추출 제출 템플릿 📌
+# ITDA 3rd 학술제 — 소비기한 추출 · [CODE]_서브웨이
 
-본 저장소는 **제3회 ITDA 연합학술제** 참가자를 위한 공식 제출 템플릿 및 환경 검증용 저장소입니다.
-
-> 📖 **대회 전체 규정·일정·채점 기준·제출 방법**: [docs/ITDA3_참가안내서.md](docs/ITDA3_참가안내서.md)
-
----
-
-## 1. 대회 개요 및 과제 정의
-
-- **주제**: OCR 기반 상품 소비기한 정보 추출 아키텍처 설계 및 도메인 활용 기획
-- **주최**: 수도권 데이터사이언스 연합학회 ITDA (경희대 CODE, 서강대 INSIGHT, 성균관대 DScover, 인하대 IBAS, 한국외대 DAT)
-- **입력 (Input)**: 상품 뒷면 이미지 (`ITDA_INPUT_DIR` 환경변수로 경로 주입)
-- **출력 (Output)**: `submission.csv` (`ITDA_OUTPUT_PATH` 환경변수 경로에 저장)
-
-### submission.csv 표준 스키마
-
-| image_id | year | month | day | final_date |
-| --- | --- | --- | --- | --- |
-| 1 | 2026 | 05 | 29 | 2026-05-29 |
-| 2 | NONE | NONE | NONE | NONE |
-
-- `image_id` : 확장자를 제외한 이미지 파일명 (예: 1)
-- `year` : 4자리 연도 문자열 (예: 2026, 미인식 시 NONE)
-- `month` : 2자리 월 문자열 (예: 05, 미인식 시 NONE)
-- `day` : 2자리 일 문자열 (예: 29, 미인식 시 NONE)
-- `final_date` : 하이픈(-)으로 연결된 정규화 날짜 (예: 2026-05-29, 미인식 시 NONE)
+상품 뒷면 이미지에서 **소비기한 날짜**를 추출해 `submission.csv` 를 생성하는 추론 파이프라인입니다.
+제3회 ITDA 연합학술제 제출용이며, 대회 규정·일정·채점 기준·Q&A 확정사항은 [docs/ITDA3_참가안내서.md](docs/ITDA3_참가안내서.md) 를 참고하세요.
 
 ---
 
-## 2. 파일 및 저장소 구조
+## 1. 파이프라인 개요 — 2-Pass Hybrid
 
-````
-itda3-[학회영문]-[영문팀명]/
-├── predict.ipynb            # 메인 추론 노트북 (운영진 채점용 필수)
-├── requirements.txt         # 실행 환경 패키지 목록 (필수)
-├── README.md                # 가중치 다운로드 및 실행 가이드 (필수)
-├── .gitignore               # 가중치·데이터 커밋 방지 (수정 시 주의)
-├── download_weights.sh      # [선택] 외부 가중치 다운로드 스크립트
-├── notebooks/               # [선택] 실험·분석 노트북 (채점 대상 아님)
-└── weights/                 # [선택] 모델 가중치 저장 폴더
-````
+```
+원본 이미지
+  │
+  ├─ ① 로드 + EXIF 회전 보정            데이터의 8.7%가 90도 회전 상태. cv2.imread 는 EXIF 를 무시하므로 PIL 로 연다.
+  │
+  ├─ ② 1패스: 긴 변 640px 축소본 → EasyOCR(en, 숫자 allowlist) → 텍스트 박스
+  │       └→ 같은 줄끼리 묶기               '30 12 23', '2020.12.28/16:35' 처럼 갈라진 조각을 한 줄로
+  │       └→ 9자리 이상 숫자열 마스킹       품목보고번호(20130628…)·바코드(8801…)의 앞자리가 날짜로 읽히는 것 차단
+  │       └→ 날짜 정규식 (3단계 신뢰도)     YYYY.MM.DD / YYYYMMDD / YY.MM.DD  ▶  DD MM YY(공백)  ▶  MM.DD(연도 없음)
+  │       └→ 연도 범위 검증 2018~2031
+  │       = 날짜 후보 + 위치
+  │
+  ├─ ③ 2패스: 후보 위치만 원본 해상도에서 크롭 → 인식기만 재실행 (검출기 재실행 없음, 크롭당 ~0.15s)
+  │
+  ├─ ④ 선택: 후보 중 가장 늦은 날짜        운영진 확정 규칙 — 제조일자·소비기한 병기 시 나중 것이 소비기한
+  │
+  └─ ⑤ 후보 없음 → NONE  /  월·일만 있음 → NONE-MM-DD   (운영진 확정 포맷)
+```
+
+**설계 요점**
+
+- **비싼 연산은 후보 영역에만.** CPU 비용의 대부분은 검출기(CRAFT)이고 픽셀 수에 비례합니다. 검출은 축소본에서 장당 1회만 돌리고, 정밀 인식은 후보 크롭에만 씁니다.
+- **저해상도 검출이 오히려 정밀도를 올립니다.** 640px 에서는 영양성분표 잔글씨가 검출되지 않아 잡음 후보가 줄고, 큼직한 날짜 스탬프는 그대로 잡힙니다.
+- **가장 위험한 오탐은 품목보고번호입니다.** `20130628332176` 의 앞 8자리는 완벽한 YYYYMMDD 입니다. 긴 숫자열을 파싱 전에 통째로 지웁니다.
+- **NONE 은 정답 값입니다.** 연도가 없는 제품(우유 `10.14 09:45`)의 정답은 `NONE-10-14` 이므로, NONE 을 회피하지 않고 "없으면 없다"고 답합니다.
 
 ---
 
-## 3. 시작하기 및 실행 방법
+## 2. 환경 구축
 
-### 1) 가상환경 구축 및 패키지 설치
+Python **3.10** 기준입니다. (개발 PC 3.11 에서도 동작 확인)
 
-````
-git clone <본인 팀 저장소 URL>
-cd <저장소 디렉토리>
+```bash
+git clone https://github.com/LEEbyeongchul/itda3-CODE-subway.git
+cd itda3-CODE-subway
+python -m venv .venv
+source .venv/bin/activate          # Windows Git Bash: source .venv/Scripts/activate
 pip install -r requirements.txt
-````
+```
 
-### 2) 가중치 파일 설정
+`requirements.txt` 는 CPU 전용 torch 를 고정합니다 (`--extra-index-url` 로 `+cpu` 휠 사용). macOS 는 `+cpu` 접미사를 제거하고 설치하세요.
 
-용량이 큰 모델 가중치 파일(`.pt`, `.pth`, `.safetensors` 등)은 Git에 직접 푸시하지 마시고, Google Drive, HuggingFace 링크 또는 Release Assets를 통해 `download_weights.sh` 스크립트 등으로 내려받도록 설정하세요.
+---
 
-### 3) 채점 재현성 검증 (운영진 채점 표준 명령어)
+## 3. 가중치 다운로드 — 오프라인 실행의 전제조건
 
-운영진은 Standard 4-Core vCPU 환경에서 아래 명령어를 실행하여 순차 실행(Run All) 및 채점을 진행합니다.
+채점 서버는 인터넷이 차단되어 있으므로 EasyOCR 가중치를 **노트북 실행 전에** 받아둬야 합니다.
+인터넷이 되는 상태에서 아래를 1회 실행합니다.
 
-````
+```bash
+bash download_weights.sh
+```
+
+`weights/` 에 다음 두 파일이 생기면 준비 완료입니다.
+
+| 파일 | 역할 | 크기 |
+| --- | --- | --- |
+| `weights/craft_mlt_25k.pth` | 텍스트 검출기 (CRAFT) | ~79 MB |
+| `weights/english_g2.pth` | 영문·숫자 인식기 | ~14 MB |
+
+`predict.ipynb` 는 `download_enabled=False` 로 리더를 만들기 때문에 가중치가 없으면 즉시 실패합니다. 실행 중 몰래 다운로드하는 경로는 없습니다.
+
+---
+
+## 4. 추론 실행 — 운영진 채점 표준 명령
+
+```bash
 export ITDA_INPUT_DIR=./val_images
 export ITDA_OUTPUT_PATH=./submission.csv
 
 jupyter nbconvert --to notebook --execute predict.ipynb \
     --ExecutePreprocessor.timeout=2400 \
     --output /tmp/executed.ipynb
-````
+```
+
+- `ITDA_INPUT_DIR` 안의 이미지(`jpg/jpeg/png/bmp/webp/tif`)를 전부 읽어 `ITDA_OUTPUT_PATH` 에 CSV 를 씁니다.
+- `image_id` 는 확장자를 제외한 파일명 그대로입니다 (zero-padding 가정 없음).
+- Windows Git Bash 에서는 앞에 `export PYTHONUTF8=1` 을 추가하면 한글 출력이 깨지지 않습니다.
 
 ---
 
-## 4. ⚠️ 채점 환경 필수 공지 (반드시 읽어주세요)
+## 5. 출력 스키마 (`submission.csv`)
 
-### 1) 팀 저장소 공개 범위
+| image_id | year | month | day | final_date |
+| --- | --- | --- | --- | --- |
+| 000001 | 2027 | 06 | 26 | 2027-06-26 |
+| 000047 | NONE | 10 | 14 | NONE-10-14 |
+| 000763 | NONE | NONE | NONE | NONE |
 
-- 팀 저장소는 **Public** 으로 생성해 주세요.
-- Private 으로 운영할 경우, 마감 전까지 운영진 계정 **`b9511242000-blip`** 을 Collaborator 로 초대해야 합니다. (Settings → Collaborators → Add people)
-- 마감 시각 기준 운영진이 접근할 수 없는 저장소는 채점 대상에서 제외됩니다.
-
-### 2) 채점 서버는 오프라인입니다
-
-채점은 **인터넷이 차단된 Standard 4-Core vCPU 환경**에서 진행됩니다.
-
-- EasyOCR, PaddleOCR 등 상당수 라이브러리는 최초 실행 시 가중치를 인터넷에서 **자동 다운로드** 합니다. 오프라인 환경에서는 이 단계가 실패해 실행 오류(정량 0점)가 발생합니다.
-- 모든 가중치는 **노트북 실행 전에 로컬에 존재**해야 합니다.
-  - `download_weights.sh` 는 채점 실행 **전에** 운영진이 1회 실행합니다.
-  - `predict.ipynb` 의 Run All **도중에** 다운로드하는 코드는 동작하지 않습니다.
-
-EasyOCR 사용 예시:
-
-````python
-reader = easyocr.Reader(
-    ['en'], gpu=False,
-    model_storage_directory='./weights',
-    download_enabled=False,   # 오프라인 강제
-)
-````
-
-네트워크를 끄고 Run All 이 끝까지 돌아가면 통과입니다. 제출 전 반드시 한 번 검증해 보세요.
-
-### 3) 환경 설치 시간은 속도 점수에 포함되지 않습니다
-
-- `pip install -r requirements.txt` 및 `download_weights.sh` 소요 시간은 속도 점수(10점) 산정에서 **제외** 됩니다.
-- 속도 점수는 `predict.ipynb` 의 Run All 실행 시간(최대 2400초)만으로 산정합니다.
+각 필드는 독립적으로 `NONE` 이 될 수 있고, `final_date` 는 세 필드를 `-` 로 이은 값입니다. 세 필드가 모두 `NONE` 이면 `final_date` 도 `NONE` 입니다. 인덱스는 저장하지 않습니다.
 
 ---
 
-## 5. 제출 전 필수 체크리스트
+## 6. 개발자용
 
-1. **CONFIG 셀 수정 금지**: `predict.ipynb` 최상단의 환경변수 주입 코드는 절대 변경하거나 값을 직접 하드코딩 대입하지 마세요.
-2. **대화형 코드 제거**: 실행 중 사용자 입력을 대기하는 코드(`input()`, `getpass()` 등)가 있으면 실행이 중단되어 정량 0점 처리됩니다.
-3. **인덱스 제외 저장**: CSV 저장 시 반드시 인덱스를 제외해야 합니다. (`df.to_csv(OUTPUT_PATH, index=False)`)
-4. **결과 스키마 준수**: 누락된 컬럼이 없도록 `image_id, year, month, day, final_date` 5개 컬럼 스키마를 엄격히 지켜주세요.
-5. **오프라인 실행 검증**: 네트워크 차단 상태에서 Run All 이 완주하는지 확인하세요.
-6. **저장소 접근 권한**: Public 설정 또는 운영진 계정 Collaborator 초대를 완료하세요.
-````
-````
+**장별 진단 출력**
+
+```bash
+ITDA_DEBUG=1 ITDA_INPUT_DIR=./val_images ITDA_OUTPUT_PATH=./submission.csv \
+  jupyter nbconvert --to notebook --execute predict.ipynb --output /tmp/executed.ipynb
+```
+
+장마다 소요 시간, 모든 날짜 후보(값·패턴·출처·신뢰도·원문), 최종 선택을 출력합니다. 채점 환경에는 이 변수가 없으므로 출력이 조용합니다.
+
+**주요 파라미터** (`predict.ipynb` 두 번째 셀)
+
+| 이름 | 기본값 | 의미 |
+| --- | --- | --- |
+| `PASS1_LADDER` | `(640, 1024)` | 1패스 해상도 사다리. 640 에서 후보가 없을 때만 1024 로 재시도. 검출 시간은 픽셀 수에 비례 — 480→1.8s, 640→2.9s, 800→4.6s, 1024→7.8s, 1280→12.2s (4스레드 실측) |
+| `MAX_BOXES` | 30 | 1패스에서 인식기에 태우는 박스 상한. 인식은 박스당 ~0.17s 라 글자 많은 라벨에선 검출기보다 비쌈 |
+| `EARLY_STOP_RATIO` | 0.6 | 글자 높이 내림차순으로 인식하다 연도 포함 날짜를 찾으면, 그 높이 × 비율 미만 박스는 건너뜀 (영양성분표 잔글씨 생략) |
+| `LOAD_MAX_LONG` | 2000 | 2패스용 원본 상한. 이보다 큰 JPEG 은 디코딩 단계(draft)에서 축소 — 24MP 원본 디코딩+회전 2~3초 절감 |
+| `PASS2_MARGIN` | 0.15 | 2패스 크롭 여백 (박스 크기 대비) |
+| `YEAR_MIN / YEAR_MAX` | 2018 / 2031 | 연도 허용 범위. 넓히면 잡음이 미래 연도로 통과해 "가장 늦은 날짜" 규칙을 오염시킴 |
+| `MASK_DIGITS_GE` | 9 | 이 길이 이상 연속 숫자는 날짜가 아님 |
+| `NONE_POLICY` | `"none"` | 후보 0개일 때 `"none"`(NONE) / `"prior"`(사전확률 날짜). 검증셋으로 비교 후 결정 |
+
+**검증셋** — `val_images/` (gitignore) 에 어려운 케이스를 모아두고 돌립니다. 원본 데이터는 `images/` (gitignore).
+
+---
+
+## 7. 트러블슈팅
+
+| 증상 | 원인 / 해결 |
+| --- | --- |
+| `download_weights.sh` 에서 `CERTIFICATE_VERIFY_FAILED` | Windows Python 의 인증서 번들 문제. `pip install certifi` 후 `SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") bash download_weights.sh` |
+| `UnicodeEncodeError: 'cp949'` | Windows 콘솔 인코딩. `export PYTHONUTF8=1` (스크립트에는 이미 포함) |
+| 노트북 첫 셀에서 `FileNotFoundError` 가중치 | `download_weights.sh` 를 먼저 실행 |
+| 실행이 매우 느림 | 첫 셀에서 `torch.get_num_threads()` 확인. 논리 코어 수만큼 쓰도록 설정되어 있음 |
+
+---
+
+## 8. 저장소 구조
+
+```
+├── predict.ipynb            # 메인 추론 노트북 (채점 대상, 첫 셀 CONFIG 수정 금지)
+├── requirements.txt         # 버전 고정 의존성 (nbconvert·ipykernel 포함)
+├── download_weights.sh      # EasyOCR 가중치 사전 다운로드
+├── README.md
+├── docs/
+│   └── ITDA3_참가안내서.md    # 대회 규정·일정·채점·Q&A 확정사항
+├── weights/                 # 가중치 (gitignore, .gitkeep 만 추적)
+├── images/                  # 배포 데이터 3,352장 (gitignore)
+└── val_images/              # 검증용 샘플 (gitignore)
+```
+
+---
+
+## 9. 제출 전 체크리스트
+
+- [ ] 첫 셀 CONFIG 원문 유지 (`os.environ.get`, 값 직접 대입 금지)
+- [ ] `bash download_weights.sh` → 네트워크 차단 → 표준 명령으로 Run All 완주
+- [ ] 500장 기준 총 실행 시간이 2400초에 **충분히** 못 미침
+- [ ] `submission.csv` 5개 컬럼, 인덱스 없음, 행 수 = 입력 이미지 수
+- [ ] `git rev-parse HEAD` 로 제출 커밋 해시 확보
+- [ ] 저장소 Public (또는 `b9511242000-blip` Collaborator 초대)
