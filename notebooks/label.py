@@ -136,7 +136,10 @@ def normalize(raw, tags):
         if len(a) == 4:
             y, m, d, fmt = int(a), int(b), int(c), "YYYY.MM.DD"
         elif len(c) == 4:
-            y, m, d, fmt = int(c), int(b), int(a), "DD.MM.YYYY"
+            if not (1 <= int(b) <= 12) and 1 <= int(a) <= 12:  # '4.13.2026' → b(13)는 월일 수 없음 → 미국식 MM.DD.YYYY
+                y, m, d, fmt = int(c), int(a), int(b), "MM.DD.YYYY"
+            else:
+                y, m, d, fmt = int(c), int(b), int(a), "DD.MM.YYYY"
         elif day_first:
             y, m, d, fmt = 2000 + int(c), int(b), int(a), "DD.MM.YY"
         else:
