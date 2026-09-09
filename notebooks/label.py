@@ -14,6 +14,7 @@ labels/sample.csv 에서 내 블록의 이미지를 차례로 띄운다. 입력�
     30 12 23 d e          → 2023-12-30, 각인
     06.26  또는 NONE.06.26 → NONE-06-26 (연도 없음)
     2027.7 또는 27.11     → 2027-07-NONE / 2027-11-NONE (일 없음)
+    12.2020               → 2020-12-NONE (유럽식 월.연도, 일 없음)
     NOV 29 2021           → 2021-11-29 (영문 월 이름. BBE/EXP 같은 앞말은 빼고)
     NONE                  → 날짜 없음
     s                     → 사람도 못 읽음 (NONE 으로 저장, 태그 s)
@@ -106,6 +107,8 @@ def normalize(raw, tags):
         a, b = nums
         if len(a) == 4:                      # '2027.7' → 연·월만, 일 없음 → 2027-07-NONE (일본 賞味期限 등)
             y, m, d, fmt = int(a), int(b), None, "YYYY.MM"
+        elif len(b) == 4:                    # '12.2020' → 유럽식 월.연도, 일 없음 → 2020-12-NONE
+            y, m, d, fmt = int(b), int(a), None, "MM.YYYY"
         elif 15 <= int(a) <= 35 and int(b) <= 12:   # '25.11' → 2025-11-NONE (연도 15~35 와 월 1~12 는 안 겹침)
             y, m, d, fmt = 2000 + int(a), int(b), None, "YY.MM"
         else:                                # '10.14' → 연도 없음 → NONE-10-14. 유럽식 MM/YY(11/25)는 '2025.11' 로 풀어 칠 것
