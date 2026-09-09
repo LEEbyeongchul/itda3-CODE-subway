@@ -14,6 +14,7 @@ labels/sample.csv 에서 내 블록의 이미지를 차례로 띄운다. 입력�
     30 12 23 d e          → 2023-12-30, 각인
     06.26  또는 NONE.06.26 → NONE-06-26 (연도 없음)
     2027.7                → 2027-07-NONE (일 없음, 일본 賞味期限 등)
+    NOV 29 2021           → 2021-11-29 (영문 월 이름. BBE/EXP 같은 앞말은 빼고)
     NONE                  → 날짜 없음
     s                     → 사람도 못 읽음 (NONE 으로 저장, 태그 s)
 
@@ -45,6 +46,8 @@ args = ap.parse_args()
 OUT = f"labels/labels_block{args.block}.csv"
 FIELDS = ["block", "labeler", "image_id", "file", "raw", "year", "month", "day", "final_date", "format", "tags", "ts"]
 TAGS = set("2drtbens?")
+MONTHS = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6, "JUL": 7, "AUG": 8, "SEP": 9, "SEPT": 9, "OCT": 10, "NOV": 11, "DEC": 12}
+_MON_RE = re.compile(r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEPT|SEP|OCT|NOV|DEC)[A-Z]*")
 MAX_W, MAX_H = 1100, 820
 
 # ---------- 데이터 ----------
@@ -67,6 +70,25 @@ def normalize(raw, tags):
         return None, None, None, "none"
     nums = re.findall(r"\d+", s)
     day_first = "d" in tags
+    mm = _MON_RE.search(s)
+    if mm:                                   # 'NOV 29 2021' / '29 NOV 21' / 'NOV 2021' — 영문 월 이름
+        m = MONTHS[mm.group(1)]
+        n4 = [t for t in nums if len(t) == 4]
+        n2 = [t for t in nums if len(t) <= 2]
+        if n4:
+            y, d = int(n4[0]), (int(n2[0]) if n2 else None)
+        elif len(n2) >= 2:
+            y, d = 2000 + int(n2[-1]), int(n2[0])
+        elif len(n2) == 1:
+            y, d = None, int(n2[0])          # 'NOV 21' 은 일로 해석. 연도였다면 '?' 태그로
+        else:
+            y, d = None, None
+        fmt = "MON DD YYYY"
+        if y is not None and not (2015 <= y <= 2035):
+            raise ValueError(f"연도 {y} 가 범위 밖")
+        if d is not None and not (1 <= d <= 31):
+            raise ValueError(f"일 {d} 이 범위 밖")
+        return y, m, d, fmt
     if len(nums) == 1:
         t = nums[0]
         if len(t) == 8:
@@ -112,7 +134,7 @@ def split_input(text):
         # 태그 판정을 먼저. '2' 는 태그지만 '22'·'12' 같은 두 자리 이상 순수 숫자는 날짜 조각('30 12 22')
         if set(t) <= TAGS and not re.fullmatch(r"\d{2,}", t):
             tags |= set(t)
-        elif re.search(r"\d", t) or t.upper() in ("NONE", "N", "X"):
+        elif re.search(r"\d", t) or t.upper() in ("NONE", "N", "X") or _MON_RE.fullmatch(t.upper()):
             date_toks.append(t)
         else:
             raise ValueError(f"알 수 없는 토큰 '{t}'")
