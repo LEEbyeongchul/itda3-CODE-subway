@@ -57,8 +57,8 @@ with open(args.sample, encoding="utf-8") as f:
 done = set()
 if os.path.exists(OUT):
     with open(OUT, encoding="utf-8") as f:
-        done = {r["image_id"] for r in csv.DictReader(f)}
-queue = [r for r in todo if r["image_id"] not in done]
+        done = {r["file"] for r in csv.DictReader(f)}
+queue = [r for r in todo if r["file"] not in done]
 if not todo:
     sys.exit(f"블록 {args.block} 에 배정된 이미지가 없습니다. sample.csv 를 확인하세요.")
 print(f"블록 {args.block}: 전체 {len(todo)}장, 완료 {len(done)}장, 남은 {len(queue)}장 → {OUT}")
@@ -74,17 +74,35 @@ def normalize(raw, tags):
     mm = _MON_RE.search(s)
     if mm:                                   # 'NOV 29 2021' / '29 NOV 21' / 'NOV 2021' — 영문 월 이름
         m = MONTHS[mm.group(1)]
-        n4 = [t for t in nums if len(t) == 4]
-        n2 = [t for t in nums if len(t) <= 2]
+        num_matches = list(re.finditer(r"\d+", s))
+        n4 = [nm for nm in num_matches if len(nm.group()) == 4]
+        n2 = [nm for nm in num_matches if len(nm.group()) <= 2]
+        day_tok = year_tok = None
         if n4:
-            y, d = int(n4[0]), (int(n2[0]) if n2 else None)
+            year_tok = n4[0]
+            y = int(year_tok.group())
+            if n2:
+                day_tok = n2[0]
+                d = int(day_tok.group())
+            else:
+                d = None
         elif len(n2) >= 2:
-            y, d = 2000 + int(n2[-1]), int(n2[0])
+            year_tok = n2[-1]
+            y = 2000 + int(year_tok.group())
+            day_tok = n2[0]
+            d = int(day_tok.group())
         elif len(n2) == 1:
-            y, d = None, int(n2[0])          # 'NOV 21' 은 일로 해석. 연도였다면 '?' 태그로
+            day_tok = n2[0]
+            y, d = None, int(day_tok.group())  # 'NOV 21' 은 일로 해석. 연도였다면 '?' 태그로
         else:
             y, d = None, None
-        fmt = "MON DD YYYY"
+        # 실제 토큰 순서대로 포맷 라벨을 구성 (예: '26 MAR 2021' → DD MON YYYY, 'NOV 29 2021' → MON DD YYYY)
+        parts = [(mm.start(), "MON")]
+        if day_tok is not None:
+            parts.append((day_tok.start(), "DD"))
+        if year_tok is not None:
+            parts.append((year_tok.start(), "YYYY" if len(year_tok.group()) == 4 else "YY"))
+        fmt = " ".join(label for _, label in sorted(parts))
         if y is not None and not (2015 <= y <= 2035):
             raise ValueError(f"연도 {y} 가 범위 밖")
         if d is not None and not (1 <= d <= 31):
@@ -118,7 +136,10 @@ def normalize(raw, tags):
         if len(a) == 4:
             y, m, d, fmt = int(a), int(b), int(c), "YYYY.MM.DD"
         elif len(c) == 4:
-            y, m, d, fmt = int(c), int(b), int(a), "DD.MM.YYYY"
+            if not (1 <= int(b) <= 12) and 1 <= int(a) <= 12:  # '4.13.2026' → b(13)는 월일 수 없음 → 미국식 MM.DD.YYYY
+                y, m, d, fmt = int(c), int(a), int(b), "MM.DD.YYYY"
+            else:
+                y, m, d, fmt = int(c), int(b), int(a), "DD.MM.YYYY"
         elif day_first:
             y, m, d, fmt = 2000 + int(c), int(b), int(a), "DD.MM.YY"
         else:
