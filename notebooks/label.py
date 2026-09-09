@@ -73,6 +73,8 @@ def normalize(raw, tags):
     day_first = "d" in tags
     mm = _MON_RE.search(s)
     if mm:                                   # 'NOV 29 2021' / '29 NOV 21' / 'NOV 2021' — 영문 월 이름
+        s = re.sub(r"(?<!\d)(\d{2})(20\d{2})(?!\d)", r"\1 \2", s)   # 붙어 찍힌 'AUG292020' → 'AUG29 2020'
+        mm = _MON_RE.search(s)
         m = MONTHS[mm.group(1)]
         num_matches = list(re.finditer(r"\d+", s))
         n4 = [nm for nm in num_matches if len(nm.group()) == 4]
@@ -103,7 +105,7 @@ def normalize(raw, tags):
         if year_tok is not None:
             parts.append((year_tok.start(), "YYYY" if len(year_tok.group()) == 4 else "YY"))
         fmt = " ".join(label for _, label in sorted(parts))
-        if y is not None and not (2015 <= y <= 2035):
+        if y is not None and not (2017 <= y <= 2031):
             raise ValueError(f"연도 {y} 가 범위 밖")
         if d is not None and not (1 <= d <= 31):
             raise ValueError(f"일 {d} 이 범위 밖")
@@ -140,11 +142,19 @@ def normalize(raw, tags):
                 y, m, d, fmt = int(c), int(a), int(b), "MM.DD.YYYY"
             else:
                 y, m, d, fmt = int(c), int(b), int(a), "DD.MM.YYYY"
-        elif day_first:
-            y, m, d, fmt = 2000 + int(c), int(b), int(a), "DD.MM.YY"
         else:
-            y, m, d, fmt = 2000 + int(a), int(b), int(c), "YY.MM.DD"
-    if y is not None and not (2015 <= y <= 2035):
+            # 2자리 연도 3숫자 ('26.06.25', '19/12/20', '30 12 23'). 정본 규칙 (파이프라인과 동일, 요약서에 명시):
+            #   년/월/일 우선. 단 (1) d 태그, (2) 공백 구분, (3) 년/월/일 로 읽은 연도가 범위(2017~2031) 밖,
+            #   (4) 그 연도가 2028 이상이면서 일/월/년도 성립 → 일/월/년.  라벨 실측: 점 72:5, 슬래시 7:7 → 구분자는 순서를 못 정함.
+            ymd = (2000 + int(a), int(b), int(c))
+            dmy = (2000 + int(c), int(b), int(a))
+            ok = lambda t: 2017 <= t[0] <= 2031 and 1 <= t[1] <= 12 and 1 <= t[2] <= 31
+            space_sep = re.search(r"\d\s+\d", s) is not None
+            if day_first or (space_sep and ok(dmy)) or not ok(ymd) or (ymd[0] >= 2028 and ok(dmy)):
+                y, m, d, fmt = dmy[0], dmy[1], dmy[2], "DD.MM.YY"
+            else:
+                y, m, d, fmt = ymd[0], ymd[1], ymd[2], "YY.MM.DD"
+    if y is not None and not (2017 <= y <= 2031):
         raise ValueError(f"연도 {y} 가 범위 밖 — d 태그(일이 먼저)가 필요한가요?")
     if not (1 <= m <= 12):
         raise ValueError(f"월 {m} 이 범위 밖")
