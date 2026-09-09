@@ -47,7 +47,7 @@ OUT = f"labels/labels_block{args.block}.csv"
 FIELDS = ["block", "labeler", "image_id", "file", "raw", "year", "month", "day", "final_date", "format", "tags", "ts"]
 TAGS = set("2drtbens?")
 MONTHS = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6, "JUL": 7, "AUG": 8, "SEP": 9, "SEPT": 9, "OCT": 10, "NOV": 11, "DEC": 12}
-_MON_RE = re.compile(r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEPT|SEP|OCT|NOV|DEC)[A-Z]*")
+_MON_RE = re.compile(r"(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEPT|SEP|OCT|NOV|DEC)[A-Z]*")
 MAX_W, MAX_H = 1100, 820
 
 # ---------- 데이터 ----------
