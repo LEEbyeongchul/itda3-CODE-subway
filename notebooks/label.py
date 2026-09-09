@@ -13,6 +13,7 @@ labels/sample.csv 에서 내 블록의 이미지를 차례로 띄운다. 입력�
     050926 d              → 2026-09-05 (d = 일이 먼저: DDMMYY)
     30 12 23 d e          → 2023-12-30, 각인
     06.26  또는 NONE.06.26 → NONE-06-26 (연도 없음)
+    2027.7                → 2027-07-NONE (일 없음, 일본 賞味期限 등)
     NONE                  → 날짜 없음
     s                     → 사람도 못 읽음 (NONE 으로 저장, 태그 s)
 
@@ -80,7 +81,11 @@ def normalize(raw, tags):
         else:
             raise ValueError(f"숫자 덩어리 길이 {len(t)} 는 해석 불가")
     elif len(nums) == 2:
-        y, m, d, fmt = None, int(nums[0]), int(nums[1]), "MM.DD"
+        a, b = nums
+        if len(a) == 4:                      # '2027.7' → 연·월만, 일 없음 → 2027-07-NONE (일본 賞味期限 등)
+            y, m, d, fmt = int(a), int(b), None, "YYYY.MM"
+        else:                                # '10.14' → 연도 없음 → NONE-10-14
+            y, m, d, fmt = None, int(a), int(b), "MM.DD"
     else:
         a, b, c = nums[:3]
         if len(a) == 4:
@@ -93,8 +98,10 @@ def normalize(raw, tags):
             y, m, d, fmt = 2000 + int(a), int(b), int(c), "YY.MM.DD"
     if y is not None and not (2015 <= y <= 2035):
         raise ValueError(f"연도 {y} 가 범위 밖 — d 태그(일이 먼저)가 필요한가요?")
-    if not (1 <= m <= 12 and 1 <= d <= 31):
-        raise ValueError(f"월 {m} / 일 {d} 가 범위 밖")
+    if not (1 <= m <= 12):
+        raise ValueError(f"월 {m} 이 범위 밖")
+    if d is not None and not (1 <= d <= 31):
+        raise ValueError(f"일 {d} 이 범위 밖")
     return y, m, d, fmt
 
 
