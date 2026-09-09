@@ -102,10 +102,11 @@ def split_input(text):
     toks = text.strip().split()
     date_toks, tags = [], set()
     for t in toks:
-        if re.search(r"\d", t) or t.upper() in ("NONE", "N", "X"):
-            date_toks.append(t)
-        elif all(ch in TAGS for ch in t):
+        # 태그 판정을 먼저. '2' 는 태그지만 '22'·'12' 같은 두 자리 이상 순수 숫자는 날짜 조각('30 12 22')
+        if set(t) <= TAGS and not re.fullmatch(r"\d{2,}", t):
             tags |= set(t)
+        elif re.search(r"\d", t) or t.upper() in ("NONE", "N", "X"):
+            date_toks.append(t)
         else:
             raise ValueError(f"알 수 없는 토큰 '{t}'")
     return " ".join(date_toks), tags
