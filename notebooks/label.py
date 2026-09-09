@@ -279,6 +279,8 @@ def rotate(_=None):
 entry.bind("<Return>", submit)
 root.bind("<F1>", rotate)
 root.bind("<Control-z>", undo)
+if sys.platform == "darwin":
+    root.bind("<Command-z>", undo)  # 맥은 Cmd+Z 로 undo 하는 습관이 있어 Ctrl+Z 와 같이 지원
 root.bind("<Escape>", lambda e: root.destroy())
 show()
 root.mainloop()
