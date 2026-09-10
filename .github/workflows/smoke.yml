@@ -1,0 +1,79 @@
+# 채점 환경 근사 스모크 테스트: Ubuntu + Python 3.10 + requirements.txt 만으로 설치 → 가중치 다운로드 → 오프라인 Run All.
+# 합성 이미지(PIL 로 날짜 문자열을 그린 것)로 돌리므로 대회 이미지는 필요 없다.
+# 통과 조건: 노트북이 에러 없이 끝나고 submission.csv 의 열이 image_id,year,month,day,final_date 이며 합성 날짜를 맞힌다.
+name: smoke (ubuntu, py3.10, offline)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install (requirements.txt only)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download weights (online phase)
+        run: bash download_weights.sh
+
+      - name: Make synthetic test images
+        run: |
+          python - <<'EOF'
+          from PIL import Image, ImageDraw, ImageFont
+          import os
+          os.makedirs("ci_imgs", exist_ok=True)
+          f = ImageFont.load_default(size=48) if hasattr(ImageFont, "load_default") else ImageFont.load_default()
+          for name, text in [("000001", "소비기한 2027.06.26 까지"), ("000002", "BEST BEFORE 18/05/2026"), ("000003", "EXP DEC-28-2025")]:
+              im = Image.new("RGB", (900, 300), "white")
+              ImageDraw.Draw(im).text((40, 110), text, fill="black", font=f)
+              im.save(f"ci_imgs/{name}.jpg", quality=95)
+          EOF
+
+      - name: Which cv2 won the install race?
+        run: python -c "import cv2, os; print(cv2.__version__, cv2.__file__)"
+
+      - name: Run All offline (network blocked via dead proxy)
+        env:
+          HTTP_PROXY: http://127.0.0.1:9
+          HTTPS_PROXY: http://127.0.0.1:9
+          http_proxy: http://127.0.0.1:9
+          https_proxy: http://127.0.0.1:9
+          ITDA_INPUT_DIR: ./ci_imgs
+          ITDA_OUTPUT_PATH: ./submission.csv
+        run: |
+          jupyter nbconvert --to notebook --execute predict.ipynb --ExecutePreprocessor.timeout=2400 --output /tmp/executed.ipynb
+          cat submission.csv
+
+      - name: Run again with forced headless-cv2 fallback (libGL-less server path)
+        env:
+          ITDA_FORCE_CV2_SHIM: "1"
+          ITDA_INPUT_DIR: ./ci_imgs
+          ITDA_OUTPUT_PATH: ./submission_shim.csv
+        run: |
+          jupyter nbconvert --to notebook --execute predict.ipynb --ExecutePreprocessor.timeout=1200 --output /tmp/executed_shim.ipynb
+          diff submission.csv submission_shim.csv && echo "fallback path gives identical output"
+
+      - name: Check output
+        run: |
+          python - <<'EOF'
+          import pandas as pd
+          df = pd.read_csv("submission.csv", dtype=str)
+          assert list(df.columns) == ["image_id", "year", "month", "day", "final_date"], df.columns
+          got = dict(zip(df.image_id, df.final_date))
+          exp = {"000001": "2027-06-26", "000002": "2026-05-18", "000003": "2025-12-28"}
+          bad = {k: (got.get(k), v) for k, v in exp.items() if got.get(k) != v}
+          print("결과:", got, " 오답:", bad)
+          assert len(bad) <= 1, f"합성 이미지 3장 중 2장 이상 틀림 — 파이프라인 자체 문제 의심: {bad}"
+          print("OK")
+          EOF
