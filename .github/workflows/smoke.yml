@@ -5,7 +5,7 @@ name: smoke (ubuntu, py3.10, offline)
 
 on:
   push:
-    branches: [main]
+    branches: [main, "seohyun-*"]
   workflow_dispatch:
 
 jobs:
