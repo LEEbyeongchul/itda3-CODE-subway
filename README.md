@@ -17,14 +17,15 @@
   │
   ├─ ① 로드 + EXIF 회전 보정            데이터의 8.7%가 90도 회전 상태. cv2.imread 는 EXIF 를 무시하므로 PIL 로 연다.
   │
-  ├─ ② 1패스: 긴 변 640px 축소본 → EasyOCR(en, 숫자 allowlist) → 텍스트 박스
+  ├─ ② 1패스: 긴 변 640px 축소본 → PaddleOCR PP-OCRv5 탐지 → 박스들을 8개씩 배치로 PP-OCRv5 인식 (숫자·영문·구분자만 남김)
   │       └→ 같은 줄끼리 묶기               '30 12 23', '2020.12.28/16:35' 처럼 갈라진 조각을 한 줄로
   │       └→ 9자리 이상 숫자열 마스킹       품목보고번호(20130628…)·바코드(8801…)의 앞자리가 날짜로 읽히는 것 차단
-  │       └→ 날짜 정규식 (3단계 신뢰도)     YYYY.MM.DD / YYYYMMDD / YY.MM.DD  ▶  DD MM YY(공백)  ▶  MM.DD(연도 없음)
-  │       └→ 연도 범위 검증 2018~2031
+  │       └→ 오독 복원                     2O27→2027, 0ct→Oct, 구분자 사이 홀로 낀 글자 제거
+  │       └→ 날짜 정규식 (4단계 신뢰도)     YYYY.MM.DD / YYYYMMDD / YY.MM.DD / FEB-26-21  ▶  DD MM YY(공백)  ▶  YYYY.MM·MM.YYYY(일 없음)  ▶  MM.DD(연도 없음)
+  │       └→ 연도 범위 검증 2015~2031
   │       = 날짜 후보 + 위치
   │
-  ├─ ③ 2패스: 후보 위치만 원본 해상도에서 크롭 → 인식기만 재실행 (검출기 재실행 없음, 크롭당 ~0.15s)
+  ├─ ③ 2패스: 후보 위치만 원본 해상도에서 크롭 → 인식기만 재실행 (검출기 재실행 없음, 크롭당 ~0.07s)
   │
   ├─ ④ 선택: 후보 중 가장 늦은 날짜        운영진 확정 규칙 — 제조일자·소비기한 병기 시 나중 것이 소비기한
   │
@@ -36,6 +37,7 @@
 - **비싼 연산은 후보 영역에만.** CPU 비용의 대부분은 검출기(CRAFT)이고 픽셀 수에 비례합니다. 검출은 축소본에서 장당 1회만 돌리고, 정밀 인식은 후보 크롭에만 씁니다.
 - **저해상도 검출이 오히려 정밀도를 올립니다.** 640px 에서는 영양성분표 잔글씨가 검출되지 않아 잡음 후보가 줄고, 큼직한 날짜 스탬프는 그대로 잡힙니다.
 - **가장 위험한 오탐은 품목보고번호입니다.** `20130628332176` 의 앞 8자리는 완벽한 YYYYMMDD 입니다. 긴 숫자열을 파싱 전에 통째로 지웁니다.
+- **탐지·인식 모두 PaddleOCR PP-OCRv5 mobile.** 라벨 133장 실측(4코어 제한): EasyOCR CRAFT+english_g2 44.4%·장당 5초 → CRAFT+PP-OCRv5 인식 60.9%·5.8초 → PP-OCRv5 탐지+인식 **67.7%·1.8초**. CRAFT 는 4코어에서 2,400초 한도를 넘기므로 탐지기 교체가 필수였습니다. Paddle 은 allowlist 가 없어 인식 결과에서 허용 문자 밖 글자를 공백으로 바꿉니다. `ITDA_DET=craft`, `ITDA_REC=easyocr` 로 예전 구성과 비교할 수 있습니다. Windows 의 paddle 3.3.1 은 탐지 모델에서 oneDNN 오류가 나 `enable_mkldnn=False` 로 고정했고, CRAFT 를 쓸 때는 Paddle 이 torch 스레드를 1로 떨어뜨리는 문제를 탐지 직전 재고정으로 막습니다.
 - **NONE 은 정답 값입니다.** 연도가 없는 제품(우유 `10.14 09:45`)의 정답은 `NONE-10-14` 이므로, NONE 을 회피하지 않고 "없으면 없다"고 답합니다.
 
 ---
@@ -58,19 +60,21 @@ pip install -r requirements.txt
 
 ## 3. 가중치 다운로드 — 오프라인 실행의 전제조건
 
-채점 서버는 인터넷이 차단되어 있으므로 EasyOCR 가중치를 **노트북 실행 전에** 받아둬야 합니다.
+채점 서버는 인터넷이 차단되어 있으므로 EasyOCR·PaddleOCR 가중치를 **노트북 실행 전에** 받아둬야 합니다.
 인터넷이 되는 상태에서 아래를 1회 실행합니다.
 
 ```bash
 bash download_weights.sh
 ```
 
-`weights/` 에 다음 두 파일이 생기면 준비 완료입니다.
+`weights/` 에 다음 파일이 생기면 준비 완료입니다.
 
 | 파일 | 역할 | 크기 |
 | --- | --- | --- |
-| `weights/craft_mlt_25k.pth` | 텍스트 검출기 (CRAFT) | ~79 MB |
-| `weights/english_g2.pth` | 영문·숫자 인식기 | ~14 MB |
+| `weights/PP-OCRv5_mobile_det/` | PaddleOCR 텍스트 탐지기 (기본). inference.json / .pdiparams / .yml, config.json | ~5 MB |
+| `weights/en_PP-OCRv5_mobile_rec/` | PaddleOCR 영문 인식기 (기본). 같은 4개 파일 | ~8 MB |
+| `weights/craft_mlt_25k.pth` | EasyOCR CRAFT 검출기. `ITDA_DET=craft` 비교용 | ~79 MB |
+| `weights/english_g2.pth` | EasyOCR 영문 인식기. `ITDA_REC=easyocr` 비교용 | ~14 MB |
 
 `predict.ipynb` 는 `download_enabled=False` 로 리더를 만들기 때문에 가중치가 없으면 즉시 실패합니다. 실행 중 몰래 다운로드하는 경로는 없습니다.
 
@@ -149,7 +153,7 @@ ITDA_DEBUG=1 ITDA_INPUT_DIR=./val_images ITDA_OUTPUT_PATH=./submission.csv \
 ```
 ├── predict.ipynb            # 메인 추론 노트북 (채점 대상, 첫 셀 CONFIG 수정 금지)
 ├── requirements.txt         # 버전 고정 의존성 (nbconvert·ipykernel 포함)
-├── download_weights.sh      # EasyOCR 가중치 사전 다운로드
+├── download_weights.sh      # EasyOCR·PaddleOCR 가중치 사전 다운로드
 ├── README.md
 ├── docs/
 │   └── ITDA3_참가안내서.md    # 대회 규정·일정·채점·Q&A 확정사항

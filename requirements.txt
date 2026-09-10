@@ -8,8 +8,11 @@
 #    버전은 반드시 == 로 고정해 주세요. ──
 torch==2.2.2+cpu
 torchvision==0.17.2+cpu
-easyocr==1.7.1
-opencv-python-headless==4.9.0.80
+easyocr==1.7.1                    # 탐지기 CRAFT (인식기는 아래 PaddleOCR)
+paddlepaddle==3.3.1               # CPU 빌드. torch 를 먼저 import 해야 함 (predict.ipynb 가 그렇게 함)
+paddleocr==3.7.0                  # PP-OCRv5 영문 인식기. 3.10 휠 확인: win_amd64 / manylinux 모두 OK (2026-09-10)
+opencv-python-headless==4.10.0.84 # easyocr 의존
+opencv-contrib-python==4.10.0.84  # paddlex 의존. 같은 버전으로 맞춰 cv2 네임스페이스 충돌 방지
 pandas==2.2.2
 numpy==1.26.4
 Pillow==10.3.0
