@@ -73,6 +73,7 @@ bash download_weights.sh
 | --- | --- | --- |
 | `weights/PP-OCRv5_mobile_det/` | PaddleOCR 텍스트 탐지기 (기본). inference.json / .pdiparams / .yml, config.json | ~5 MB |
 | `weights/en_PP-OCRv5_mobile_rec/` | PaddleOCR 영문 인식기 (기본). 같은 4개 파일 | ~8 MB |
+| `weights/cv2_headless/cv2/` | headless OpenCV 예비본. paddleocr 가 강제 설치하는 비headless OpenCV 가 libGL 없는 Linux 에서 import 실패할 때 노트북이 자동으로 이걸로 대체 | ~60 MB (Linux) |
 | `weights/craft_mlt_25k.pth` | EasyOCR CRAFT 검출기. `ITDA_DET=craft` 비교용 | ~79 MB |
 | `weights/english_g2.pth` | EasyOCR 영문 인식기. `ITDA_REC=easyocr` 비교용 | ~14 MB |
 
@@ -144,6 +145,7 @@ ITDA_DEBUG=1 ITDA_INPUT_DIR=./val_images ITDA_OUTPUT_PATH=./submission.csv \
 | `download_weights.sh` 에서 `CERTIFICATE_VERIFY_FAILED` | Windows Python 의 인증서 번들 문제. `pip install certifi` 후 `SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") bash download_weights.sh` |
 | `UnicodeEncodeError: 'cp949'` | Windows 콘솔 인코딩. `export PYTHONUTF8=1` (스크립트에는 이미 포함) |
 | 노트북 첫 셀에서 `FileNotFoundError` 가중치 | `download_weights.sh` 를 먼저 실행 |
+| `ImportError: libGL.so.1` (Linux) | 비headless OpenCV 문제. `download_weights.sh` 를 실행했으면 노트북이 `weights/cv2_headless` 로 자동 대체한다. 그래도 나면 `apt-get install -y libgl1` |
 | 실행이 매우 느림 | 첫 셀에서 `torch.get_num_threads()` 확인. 논리 코어 수만큼 쓰도록 설정되어 있음 |
 
 ---
