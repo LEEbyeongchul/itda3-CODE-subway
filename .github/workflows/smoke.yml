@@ -47,8 +47,6 @@ jobs:
         env:
           HTTP_PROXY: http://127.0.0.1:9
           HTTPS_PROXY: http://127.0.0.1:9
-          http_proxy: http://127.0.0.1:9
-          https_proxy: http://127.0.0.1:9
           ITDA_INPUT_DIR: ./ci_imgs
           ITDA_OUTPUT_PATH: ./submission.csv
         run: |
