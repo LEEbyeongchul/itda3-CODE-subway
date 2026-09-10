@@ -7,6 +7,7 @@
 - **전체 계획 · 일정 · 역할 · 작업 목록**: [docs/프로젝트_계획.md](docs/프로젝트_계획.md)
 - **검증셋 라벨링 방법**: [labels/README.md](labels/README.md)
 - **날짜 해석 규칙** (운영진: 모호한 값은 팀 규칙으로 채점 → 요약서 삽입용): [docs/날짜_해석_규칙.md](docs/날짜_해석_규칙.md)
+- **9/11~13 성능 스프린트 작업 가이드** (줄기별 할 일·관문·보고 형식): [docs/작업_가이드.md](docs/작업_가이드.md)
 
 ---
 
@@ -15,29 +16,32 @@
 ```
 원본 이미지
   │
-  ├─ ① 로드 + EXIF 회전 보정            데이터의 8.7%가 90도 회전 상태. cv2.imread 는 EXIF 를 무시하므로 PIL 로 연다.
+  ├─ ① 로드 + EXIF 회전 보정            데이터의 8.7%가 90도 회전 상태. cv2.imread 는 EXIF 를 무시하므로 PIL 로 연다. 24MP 는 draft 로 축소 디코딩
   │
-  ├─ ② 1패스: 긴 변 640px 축소본 → PaddleOCR PP-OCRv5 탐지 → 박스들을 8개씩 배치로 PP-OCRv5 인식 (숫자·영문·구분자만 남김)
+  ├─ ② 1패스 검출: 긴 변 640px 축소본 → PaddleOCR PP-OCRv5 mobile 탐지 1회 (~300ms)   (후보 없으면 1024px 로 한 번 더 — 사다리)
+  │       └→ 인식: 큰 글자 박스부터 8개씩 배치로 PP-OCRv5 영문 인식기 (숫자·영문·구분자). 완전한 날짜를 읽으면 그보다 훨씬 작은 박스는 생략
+  │       └→ 오독 복원                      2O27→2027, 0ct→Oct, 구분자 사이 홀로 낀 글자 제거
   │       └→ 같은 줄끼리 묶기               '30 12 23', '2020.12.28/16:35' 처럼 갈라진 조각을 한 줄로
+  │       └→ 조각 복원                      도트 프린터 '20 2 7 . 0 4.13' → '2027.04.13' (공백 제거본을 함께 파싱)
   │       └→ 9자리 이상 숫자열 마스킹       품목보고번호(20130628…)·바코드(8801…)의 앞자리가 날짜로 읽히는 것 차단
-  │       └→ 오독 복원                     2O27→2027, 0ct→Oct, 구분자 사이 홀로 낀 글자 제거
-  │       └→ 날짜 정규식 (4단계 신뢰도)     YYYY.MM.DD / YYYYMMDD / YY.MM.DD / FEB-26-21  ▶  DD MM YY(공백)  ▶  YYYY.MM·MM.YYYY(일 없음)  ▶  MM.DD(연도 없음)
-  │       └→ 연도 범위 검증 2015~2031
-  │       = 날짜 후보 + 위치
+  │       └→ 날짜 정규식 (3단계)            YYYY.MM.DD / YYYYMMDD / DD.MM.YYYY / YY.MM.DD  ▶  DD MM YY · 6자리  ▶  연·월만 · 월·일만
+  │       └→ 연도 범위 2017~2031, 2자리 연도 상한 2027
+  │       └→ 영문 월 이름은 인식 allowlist 에 포함 → 'NOV 29 2021', 'FEB/26/21' 직접 파싱
   │
-  ├─ ③ 2패스: 후보 위치만 원본 해상도에서 크롭 → 인식기만 재실행 (검출기 재실행 없음, 크롭당 ~0.07s)
+  ├─ ③ 2패스: 후보 줄의 단어 박스만 원본(≤2000px)에서 재인식 (검출기 재실행 없음, 크롭당 ~0.07s)
   │
-  ├─ ④ 선택: 후보 중 가장 늦은 날짜        운영진 확정 규칙 — 제조일자·소비기한 병기 시 나중 것이 소비기한
+  ├─ ④ 선택: 패턴 등급이 가장 높은 후보들 중 가장 늦은 날짜     운영진 확정 규칙 — 병기 시 나중 것이 소비기한
   │
-  └─ ⑤ 후보 없음 → NONE  /  월·일만 있음 → NONE-MM-DD   (운영진 확정 포맷)
+  └─ ⑤ 후보 없음 → NONE  /  월·일만 → NONE-MM-DD  /  연·월만 → YYYY-MM-NONE   (운영진 확정, 필드별 부분점수)
 ```
 
 **설계 요점**
 
-- **비싼 연산은 후보 영역에만.** CPU 비용의 대부분은 검출기(CRAFT)이고 픽셀 수에 비례합니다. 검출은 축소본에서 장당 1회만 돌리고, 정밀 인식은 후보 크롭에만 씁니다.
+- **탐지·인식 모두 PaddleOCR PP-OCRv5 mobile.** 같은 500장(블록 1~5, 튜닝 미사용)에서 EasyOCR 구성 53% → **73.6%**, 4코어 장당 4.1s → **1.8s**. 저화질 층도 47% → 69%. 근거는 [docs/기술_설명.md](docs/기술_설명.md)·[docs/실험_기록.md](docs/실험_기록.md).
+- **비싼 연산은 후보 영역에만.** 검출은 축소본에서 장당 1회만 돌리고, 정밀 인식은 후보 크롭에만 씁니다.
 - **저해상도 검출이 오히려 정밀도를 올립니다.** 640px 에서는 영양성분표 잔글씨가 검출되지 않아 잡음 후보가 줄고, 큼직한 날짜 스탬프는 그대로 잡힙니다.
 - **가장 위험한 오탐은 품목보고번호입니다.** `20130628332176` 의 앞 8자리는 완벽한 YYYYMMDD 입니다. 긴 숫자열을 파싱 전에 통째로 지웁니다.
-- **탐지·인식 모두 PaddleOCR PP-OCRv5 mobile.** 라벨 133장 실측(4코어 제한): EasyOCR CRAFT+english_g2 44.4%·장당 5초 → CRAFT+PP-OCRv5 인식 60.9%·5.8초 → PP-OCRv5 탐지+인식 **67.7%·1.8초**. CRAFT 는 4코어에서 2,400초 한도를 넘기므로 탐지기 교체가 필수였습니다. Paddle 은 allowlist 가 없어 인식 결과에서 허용 문자 밖 글자를 공백으로 바꿉니다. `ITDA_DET=craft`, `ITDA_REC=easyocr` 로 예전 구성과 비교할 수 있습니다. Windows 의 paddle 3.3.1 은 탐지 모델에서 oneDNN 오류가 나 `enable_mkldnn=False` 로 고정했고, CRAFT 를 쓸 때는 Paddle 이 torch 스레드를 1로 떨어뜨리는 문제를 탐지 직전 재고정으로 막습니다.
+- **2패스는 확인만 합니다.** 기준선 실측에서 2패스가 1패스 값을 덮어쓴 답의 완전일치가 61.7% vs 유지 72.3% 였습니다. 그래서 같은 값을 다시 읽으면 신뢰도만 올리고, 다른 값은 버립니다.
 - **NONE 은 정답 값입니다.** 연도가 없는 제품(우유 `10.14 09:45`)의 정답은 `NONE-10-14` 이므로, NONE 을 회피하지 않고 "없으면 없다"고 답합니다.
 
 ---
@@ -60,7 +64,7 @@ pip install -r requirements.txt
 
 ## 3. 가중치 다운로드 — 오프라인 실행의 전제조건
 
-채점 서버는 인터넷이 차단되어 있으므로 EasyOCR·PaddleOCR 가중치를 **노트북 실행 전에** 받아둬야 합니다.
+채점 서버는 인터넷이 차단되어 있으므로 PaddleOCR·EasyOCR 가중치를 **노트북 실행 전에** 받아둬야 합니다.
 인터넷이 되는 상태에서 아래를 1회 실행합니다.
 
 ```bash
@@ -73,11 +77,11 @@ bash download_weights.sh
 | --- | --- | --- |
 | `weights/PP-OCRv5_mobile_det/` | PaddleOCR 텍스트 탐지기 (기본). inference.json / .pdiparams / .yml, config.json | ~5 MB |
 | `weights/en_PP-OCRv5_mobile_rec/` | PaddleOCR 영문 인식기 (기본). 같은 4개 파일 | ~8 MB |
-| `weights/cv2_headless/cv2/` | headless OpenCV 예비본. paddleocr 가 강제 설치하는 비headless OpenCV 가 libGL 없는 Linux 에서 import 실패할 때 노트북이 자동으로 이걸로 대체 | ~60 MB (Linux) |
-| `weights/craft_mlt_25k.pth` | EasyOCR CRAFT 검출기. `ITDA_DET=craft` 비교용 | ~79 MB |
-| `weights/english_g2.pth` | EasyOCR 영문 인식기. `ITDA_REC=easyocr` 비교용 | ~14 MB |
+| `weights/cv2_headless/cv2/` | headless OpenCV 예비본. libGL 없는 Linux 에서 `import cv2` 실패 시 노트북이 자동 대체 | ~60 MB |
+| `weights/craft_mlt_25k.pth` | EasyOCR CRAFT 검출기 — `ITDA_DET=craft` 비교용 | ~79 MB |
+| `weights/english_g2.pth` | EasyOCR 영문 인식기 — `ITDA_REC=easyocr` 비교용 | ~14 MB |
 
-`predict.ipynb` 는 `download_enabled=False` 로 리더를 만들기 때문에 가중치가 없으면 즉시 실패합니다. 실행 중 몰래 다운로드하는 경로는 없습니다.
+`predict.ipynb` 는 오프라인 로드만 합니다(`PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK`, EasyOCR `download_enabled=False`). 가중치가 없으면 즉시 실패하고, 실행 중 다운로드하는 경로는 없습니다. Ubuntu + Python 3.10 오프라인 Run All 은 `.github/workflows/smoke.yml` 이 push 마다 검증합니다.
 
 ---
 
@@ -125,16 +129,19 @@ ITDA_DEBUG=1 ITDA_INPUT_DIR=./val_images ITDA_OUTPUT_PATH=./submission.csv \
 
 | 이름 | 기본값 | 의미 |
 | --- | --- | --- |
+| `TIME_BUDGET_S` | 2000 | **시간 예산 가드.** 최근 20장 속도로 총 소요를 예측해 예산 초과가 예상되면 경량 단계를 올림 — 1: 사다리 640만·폴백 생략 → 2: 박스 10·2패스 생략(해상도는 유지 — 480px 로 줄이면 인식 붕괴) → 3: 남은 장 NONE(CSV 는 반드시 생성). 타임아웃(2400s) 시 정량 전체 0점을 구조적으로 방지. Colab 2vCPU 실측 14.2s/장(500장 118분)에서도 완주 |
 | `PASS1_LADDER` | `(640, 1024)` | 1패스 해상도 사다리. 640 에서 후보가 없을 때만 1024 로 재시도. 검출 시간은 픽셀 수에 비례 — 480→1.8s, 640→2.9s, 800→4.6s, 1024→7.8s, 1280→12.2s (4스레드 실측) |
-| `MAX_BOXES` | 30 | 1패스에서 인식기에 태우는 박스 상한. 인식은 박스당 ~0.17s 라 글자 많은 라벨에선 검출기보다 비쌈 |
+| `MAX_BOXES` / `MAX_BOXES_HARD` | 30 / 50 | 1패스에서 인식기에 태우는 박스 상한. 날짜 비슷한 텍스트를 하나도 못 봤으면 50개까지. 인식은 박스당 ~0.17s 라 글자 많은 라벨에선 검출기보다 비쌈 |
 | `EARLY_STOP_RATIO` | 0.6 | 글자 높이 내림차순으로 인식하다 연도 포함 날짜를 찾으면, 그 높이 × 비율 미만 박스는 건너뜀 (영양성분표 잔글씨 생략) |
 | `LOAD_MAX_LONG` | 2000 | 2패스용 원본 상한. 이보다 큰 JPEG 은 디코딩 단계(draft)에서 축소 — 24MP 원본 디코딩+회전 2~3초 절감 |
-| `PASS2_MARGIN` | 0.15 | 2패스 크롭 여백 (박스 크기 대비) |
-| `YEAR_MIN / YEAR_MAX` | 2018 / 2031 | 연도 허용 범위. 넓히면 잡음이 미래 연도로 통과해 "가장 늦은 날짜" 규칙을 오염시킴 |
+| `PASS2_MARGIN` | 0.30 | 2패스 크롭 여백 (박스 크기 대비). 640px 박스를 원본 좌표로 환산하면 오차가 커서 넉넉히 |
+| `MON_FALLBACK_BOXES` | 12 | 후보 0개일 때 영문 포함 allowlist 로 재인식하는 박스 수 |
+| `YEAR_MIN / YEAR_MAX` | 2017 / 2031 | 연도 허용 범위 (라벨 실측 2017~2030). 넓히면 잡음이 미래 연도로 통과해 "가장 늦은 날짜" 규칙을 오염시킴 |
+| `YY_SOFT_MAX` | 2027 | 2자리 연도가 모호할 때 이 해를 넘는 해석은 버림. `30/07/26` → 2026-07-30 |
 | `MASK_DIGITS_GE` | 9 | 이 길이 이상 연속 숫자는 날짜가 아님 |
 | `NONE_POLICY` | `"none"` | 후보 0개일 때 `"none"`(NONE) / `"prior"`(사전확률 날짜). 검증셋으로 비교 후 결정 |
 
-**검증셋** — `val_images/` (gitignore) 에 어려운 케이스를 모아두고 돌립니다. 원본 데이터는 `images/` (gitignore).
+**검증셋과 정확도** — 팀 라벨 `labels/labels_block*.csv` (800장, 해상도 층화). 버전별 정확도·속도와 오류 분석은 [docs/실험_기록.md](docs/실험_기록.md). 원본 데이터는 `images/` (gitignore).
 
 ---
 
@@ -145,7 +152,7 @@ ITDA_DEBUG=1 ITDA_INPUT_DIR=./val_images ITDA_OUTPUT_PATH=./submission.csv \
 | `download_weights.sh` 에서 `CERTIFICATE_VERIFY_FAILED` | Windows Python 의 인증서 번들 문제. `pip install certifi` 후 `SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") bash download_weights.sh` |
 | `UnicodeEncodeError: 'cp949'` | Windows 콘솔 인코딩. `export PYTHONUTF8=1` (스크립트에는 이미 포함) |
 | 노트북 첫 셀에서 `FileNotFoundError` 가중치 | `download_weights.sh` 를 먼저 실행 |
-| `ImportError: libGL.so.1` (Linux) | 비headless OpenCV 문제. `download_weights.sh` 를 실행했으면 노트북이 `weights/cv2_headless` 로 자동 대체한다. 그래도 나면 `apt-get install -y libgl1` |
+| `ImportError: libGL.so.1` (Linux) | 비headless OpenCV 문제. `download_weights.sh` 를 실행했으면 노트북이 `weights/cv2_headless` 로 자동 대체. 운영진에 `libgl1` 유무 확인 권장 |
 | 실행이 매우 느림 | 첫 셀에서 `torch.get_num_threads()` 확인. 논리 코어 수만큼 쓰도록 설정되어 있음 |
 
 ---
@@ -154,11 +161,32 @@ ITDA_DEBUG=1 ITDA_INPUT_DIR=./val_images ITDA_OUTPUT_PATH=./submission.csv \
 
 ```
 ├── predict.ipynb            # 메인 추론 노트북 (채점 대상, 첫 셀 CONFIG 수정 금지)
-├── requirements.txt         # 버전 고정 의존성 (nbconvert·ipykernel 포함)
-├── download_weights.sh      # EasyOCR·PaddleOCR 가중치 사전 다운로드
+├── requirements.txt         # 버전 고정 의존성 (Python 3.10 wheel 확인됨, nbconvert·ipykernel 포함)
+├── download_weights.sh      # PaddleOCR·EasyOCR 가중치 사전 다운로드
+├── .github/workflows/smoke.yml  # Ubuntu 3.10 오프라인 Run All CI
 ├── README.md
 ├── docs/
-│   └── ITDA3_참가안내서.md    # 대회 규정·일정·채점·Q&A 확정사항
+│   ├── ITDA3_참가안내서.md    # 대회 규정 원문
+│   ├── QA_확정사항.md        # 운영진 답변 11건 — 설계 근거
+│   ├── 날짜_해석_규칙.md      # 모호한 날짜의 결정 규칙 (요약서 삽입용)
+│   ├── 기술_설명.md          # 현재 파이프라인(PaddleOCR) 정의·측정·성능 이력·결정 근거
+│   ├── 실험_기록.md          # EasyOCR 구성의 오류 분석·미채택 실험·속도 실측
+│   ├── 작업현황_인수인계.md    # 이어서 할 일
+│   ├── 파인튜닝_절차.md       # 인식기 파인튜닝 (Colab)
+│   ├── 프로젝트_계획.md       # 일정·역할·작업 목록
+│   ├── 기술적_계획.md         # 탐지·인식기 고도화 계획 (본선용)
+│   └── 아이디어.md           # 도메인 기획 (물류 입고 검수)
+├── labels/
+│   ├── README.md             # 라벨링 규칙
+│   ├── sample.csv            # 라벨링 대상·블록 배정
+│   └── labels_block*.csv     # 팀 라벨 (raw 가 원본, 나머지 열은 도구 규칙으로 재계산 가능)
+├── notebooks/
+│   ├── label.py              # 라벨링 도구 (해석 규칙의 정본 구현)
+│   ├── make_sample.py        # 층화 샘플링
+│   ├── eval.py               # 정확도 평가 (--blocks 1-5) · eval_report.py 는 교차표·정밀도-커버리지·오답 목록
+│   ├── compare.py            # 버전 비교
+│   ├── review.py             # 오답 원인 태깅
+│   └── make_rec_dataset.py   # 인식기 파인튜닝용 날짜 크롭 추출
 ├── weights/                 # 가중치 (gitignore, .gitkeep 만 추적)
 ├── images/                  # 배포 데이터 3,352장 (gitignore)
 └── val_images/              # 검증용 샘플 (gitignore)
