@@ -27,3 +27,5 @@ Thumbs.db
 
 # ===== 파인튜닝 데이터 (용량 큼, zip 으로 Colab 에 전달) =====
 data/rec_train/
+train_out/
+notebooks/_run_paddle_tool.py
