@@ -29,3 +29,4 @@ Thumbs.db
 data/rec_train/
 train_out/
 notebooks/_run_paddle_tool.py
+data/val500/
