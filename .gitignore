@@ -31,3 +31,5 @@ train_out/
 notebooks/_run_paddle_tool.py
 data/val500/
 data/rec_synth/
+data/val300/
+data/val_rest/
