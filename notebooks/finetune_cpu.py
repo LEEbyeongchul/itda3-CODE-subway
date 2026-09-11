@@ -29,6 +29,7 @@ ap.add_argument("--val-list", default="val_clean.txt")
 ap.add_argument("--epochs", type=int, default=10)
 ap.add_argument("--lr", type=float, default=0.0001)
 ap.add_argument("--batch", type=int, default=32)
+ap.add_argument("--warmup", type=int, default=1, help="warmup epoch 수 (기본 config 는 5 → 짧은 학습에선 학습률이 안 오름)")
 ap.add_argument("--out", default="train_out/itda_en_rec")
 ap.add_argument("--skip-train", action="store_true", help="이미 학습된 best_accuracy 로 내보내기만")
 a = ap.parse_args()
@@ -59,8 +60,8 @@ print(f"train {n_train} · val {n_val} · epochs {a.epochs} · lr {a.lr} · batc
 
 if not a.skip_train:
     run("train.py", [f"Global.pretrained_model={os.path.abspath(a.pretrained)}", f"Global.epoch_num={a.epochs}",
-                     "Global.eval_batch_step=[0,50]", "Global.print_batch_step=5", "Global.save_epoch_step=1",
-                     f"Optimizer.lr.learning_rate={a.lr}"])
+                     "Global.eval_batch_step=[0,6]", "Global.print_batch_step=1", "Global.save_epoch_step=1",
+                     f"Optimizer.lr.learning_rate={a.lr}", f"Optimizer.lr.warmup_epoch={a.warmup}"])
 
 best = os.path.join(out, "best_accuracy")
 if not os.path.exists(best + ".pdparams"):
