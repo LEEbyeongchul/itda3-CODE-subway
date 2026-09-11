@@ -59,6 +59,7 @@ jobs:
           ITDA_INPUT_DIR: ./ci_imgs
           ITDA_OUTPUT_PATH: ./submission_shim.csv
         run: |
+          ls weights/cv2_headless && ls weights/cv2_headless/cv2 | head -5
           jupyter nbconvert --to notebook --execute predict.ipynb --ExecutePreprocessor.timeout=1200 --output /tmp/executed_shim.ipynb
           diff submission.csv submission_shim.csv && echo "fallback path gives identical output"
 
