@@ -11,13 +11,13 @@ FONT = "C:/Windows/Fonts/malgun.ttf" if os.path.exists("C:/Windows/Fonts/malgun.
 FONT_B = "C:/Windows/Fonts/malgunbd.ttf" if os.path.exists("C:/Windows/Fonts/malgunbd.ttf") else FONT
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--acc", default="73.6%")
-ap.add_argument("--speed", default="1.8초")
+ap.add_argument("--acc", default="77.0%")
+ap.add_argument("--speed", default="2.9초")
 ap.add_argument("--note", default="사전학습 모델 그대로 (파인튜닝 전)")
 a = ap.parse_args()
 
 STAGES = [
-    ("입력", ["원본 사진 (3,352장 배포)", "EXIF 회전 보정", "긴 변 640px 축소", "후보 없으면 1024px 재시도"], "#EEF2F7"),
+    ("입력", ["원본 사진 (3,352장 배포)", "EXIF 회전 보정", "긴 변 640px 축소 → 없으면 1024px", "그래도 없으면 도트매트릭스 폴백: 침식·블러로 점을 이어 재시도"], "#EEF2F7"),
     ("① 텍스트 탐지", ["PaddleOCR PP-OCRv5 mobile det", "약 5 MB · CPU 전용", "4코어 640px 기준 약 0.3초", "모든 글자 박스 검출"], "#DCEBFA"),
     ("② 텍스트 인식", ["PaddleOCR PP-OCRv5 mobile rec (en)", "약 8 MB · 숫자·영문·구분자", "글자 크기순 8개 배치 인식", "연도 포함 날짜 찾으면 잔글씨 생략"], "#DCEBFA"),
     ("③ 2패스 재인식", ["후보 줄의 단어 박스만", "원본 해상도(≤2000px) 크롭", "검출기 재실행 없음", "자릿수 오독 보정"], "#E4F1E4"),
@@ -83,7 +83,7 @@ for i, (head, body, color) in enumerate(STAGES):
 notes = [
     "채점 제약: GPU 없는 4코어 CPU · 500장 · 셀 타임아웃 2,400초 · Python 3.10 · 가중치는 download_weights.sh 로 사전 다운로드 (git 미포함)",
     "날짜 해석 규칙(연도 위치, 2자리 연도, 공백 구분, 영문 월, 키워드)은 요약서 규칙표와 동일하게 predict.ipynb 파서에 구현 · 라벨링 도구와 같은 규칙",
-    "성능 이력(133장): EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% → 신뢰 등급 선택 73.6%(500장)",
+    "성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% (측정 500장)",
 ]
 yy = TOP + BOX_H + 60
 for n in notes:
