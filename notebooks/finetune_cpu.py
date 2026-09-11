@@ -69,5 +69,10 @@ if getattr(a, "ckpt", None):
     best = os.path.join(out, a.ckpt)
 run("eval.py", [f"Global.pretrained_model={best}"])
 run("eval.py", [f"Global.pretrained_model={os.path.abspath(a.pretrained)}"])   # 비교 기준: 사전학습 모델의 val 성능
-run("export_model.py", [f"Global.pretrained_model={best}", f"Global.save_inference_dir={out}/infer/"])
-print("내보내기 완료:", os.listdir(os.path.join(out, "infer")))
+# Paddle 의 C++ 저장 경로는 Windows 에서 한글·공백이 있으면 mkdir 에 실패한다 → ASCII 임시 경로로 내보낸 뒤 복사
+import shutil, tempfile
+tmp_infer = os.path.join(tempfile.gettempdir(), "itda_rec_infer")
+shutil.rmtree(tmp_infer, ignore_errors=True)
+run("export_model.py", [f"Global.pretrained_model={best}", f"Global.save_inference_dir={tmp_infer}/"])
+dst = os.path.join(out, "infer"); shutil.rmtree(dst, ignore_errors=True); shutil.copytree(tmp_infer, dst)
+print("내보내기 완료:", os.listdir(dst))
