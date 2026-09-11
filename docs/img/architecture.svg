@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2600" height="760" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif">
 <rect width="2600" height="760" fill="white"/>
 <text x="60" y="72" font-size="34" font-weight="bold" fill="#1F2937">소비기한 OCR 파이프라인 아키텍처</text>
-<text x="60" y="110" font-size="19" fill="#4B5563">측정용 500장 정확도 77.0% · 4코어 CPU 장당 2.9초 · 인터넷 차단 환경 · 사전학습 모델 그대로 (파인튜닝 전)</text>
+<text x="60" y="110" font-size="19" fill="#4B5563">측정용 500장 정확도 78.4% · 4코어 CPU 장당 2.3초 · 인터넷 차단 환경 · 사전학습 모델 그대로 (파인튜닝 전)</text>
 <rect x="30" y="150" width="380" height="330" rx="18" fill="#EEF2F7" stroke="#94A3B8" stroke-width="3"/>
 <text x="52" y="196" font-size="26" font-weight="bold" fill="#111827">입력</text>
 <line x1="52" y1="210" x2="388" y2="210" stroke="#94A3B8" stroke-width="2"/>
@@ -33,9 +33,9 @@
 <text x="1348" y="196" font-size="26" font-weight="bold" fill="#111827">③ 2패스 재인식</text>
 <line x1="1348" y1="210" x2="1684" y2="210" stroke="#94A3B8" stroke-width="2"/>
 <text x="1348" y="250" font-size="20" fill="#1F2937">후보 줄의 단어 박스만</text>
-<text x="1348" y="280" font-size="20" fill="#1F2937">원본 해상도(≤2000px) 크롭</text>
-<text x="1348" y="310" font-size="20" fill="#1F2937">검출기 재실행 없음</text>
-<text x="1348" y="340" font-size="20" fill="#1F2937">자릿수 오독 보정</text>
+<text x="1348" y="280" font-size="20" fill="#1F2937">원본 해상도와 1024px 두 스케일로 재인식</text>
+<text x="1348" y="310" font-size="20" fill="#1F2937">1패스까지 셋이 투표, 두 표 이상만 채택</text>
+<text x="1348" y="340" font-size="20" fill="#1F2937">자릿수 하나 오독 보정</text>
 <line x1="1712" y1="315" x2="1740" y2="315" stroke="#475569" stroke-width="5"/>
 <polygon points="1752,315 1736,305 1736,325" fill="#475569"/>
 <rect x="1758" y="150" width="380" height="330" rx="18" fill="#FBEEDB" stroke="#94A3B8" stroke-width="3"/>
@@ -56,5 +56,5 @@
 <text x="2212" y="340" font-size="20" fill="#1F2937">NONE (판독 불가)</text>
 <text x="60" y="557" font-size="19" fill="#374151">• 채점 제약: GPU 없는 4코어 CPU · 500장 · 셀 타임아웃 2,400초 · Python 3.10 · 가중치는 download_weights.sh 로 사전 다운로드 (git 미포함)</text>
 <text x="60" y="591" font-size="19" fill="#374151">• 날짜 해석 규칙(연도 위치, 2자리 연도, 공백 구분, 영문 월, 키워드)은 요약서 규칙표와 동일하게 predict.ipynb 파서에 구현 · 라벨링 도구와 같은 규칙</text>
-<text x="60" y="625" font-size="19" fill="#374151">• 성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% (측정 500장)</text>
+<text x="60" y="625" font-size="19" fill="#374151">• 성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% → 2패스 다수결 78.4% (측정 500장)</text>
 </svg>
