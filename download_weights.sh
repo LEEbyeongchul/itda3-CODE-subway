@@ -9,6 +9,7 @@
 #   weights/english_g2.pth                       EasyOCR 영문 인식기 (Reader 초기화에 필요. ITDA_REC=easyocr 일 때 실제 사용)
 #   weights/PP-OCRv5_mobile_det/                 PaddleOCR 텍스트 탐지기 (기본 탐지기, 약 5MB)
 #   weights/en_PP-OCRv5_mobile_rec/              PaddleOCR 영문 인식기 (기본 인식기, 약 8MB)
+#   weights/en_PP-OCRv5_mobile_rec_ft/           위 인식기를 우리 라벨 크롭 393장으로 파인튜닝한 것 (1순위 인식기, 약 8MB, GitHub Release 첨부)
 #       각 폴더: inference.json / inference.pdiparams / inference.yml / config.json
 #   weights/cv2_headless/cv2/                    headless OpenCV 예비본 (libGL 없는 Linux 서버에서 import cv2 실패 대비, 약 60MB)
 set -euo pipefail
@@ -46,6 +47,29 @@ if missing:
 for f in need:
     mb = os.path.getsize(os.path.join("weights", f)) / 1024 / 1024
     print(f"  OK  weights/{f}  ({mb:.1f} MB)")
+
+# ---- 파인튜닝 인식기 (GitHub Release Assets). 실패해도 중단하지 않는다 — 노트북은 폴더가 없으면 사전학습 인식기만으로 동작한다.
+#      측정 500장: 사전학습 77.6% → 파인튜닝 1순위 + NONE 시 사전학습 폴백 81.0%.
+import io, ssl, urllib.request, zipfile as _zf
+FT_URL = os.environ.get("ITDA_FT_URL", "https://github.com/LEEbyeongchul/itda3-CODE-subway/releases/download/weights-v1/en_PP-OCRv5_mobile_rec_ft.zip")
+ft = os.path.join("weights", "en_PP-OCRv5_mobile_rec_ft")
+if not os.path.exists(os.path.join(ft, "inference.pdiparams")):
+    try:
+        try:
+            data = urllib.request.urlopen(FT_URL, timeout=120).read()
+        except ssl.SSLError:
+            import certifi
+            data = urllib.request.urlopen(FT_URL, timeout=120, context=ssl.create_default_context(cafile=certifi.where())).read()
+        os.makedirs(ft, exist_ok=True)
+        with _zf.ZipFile(io.BytesIO(data)) as z:
+            z.extractall(ft)
+        shutil.copy(os.path.join("weights", "en_PP-OCRv5_mobile_rec", "config.json"), ft)   # 전처리 설정은 사전학습 것과 동일
+    except Exception as e:
+        print(f"  [WARN] 파인튜닝 인식기 다운로드 실패 ({e}) — 사전학습 인식기만 사용 (정확도 약 -3%p)")
+if os.path.exists(os.path.join(ft, "inference.pdiparams")):
+    for f in FILES:
+        mb = os.path.getsize(os.path.join(ft, f)) / 1024 / 1024
+        print(f"  OK  weights/en_PP-OCRv5_mobile_rec_ft/{f}  ({mb:.1f} MB)")
 
 # ---- headless OpenCV 예비본. paddleocr → paddlex 가 opencv-contrib-python(비headless)을 강제로 설치하는데,
 #      Linux 서버에 libGL.so.1 이 없으면 `import cv2` 가 실패해 노트북이 첫 셀에서 죽는다.
