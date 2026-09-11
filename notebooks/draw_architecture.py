@@ -11,7 +11,7 @@ FONT = "C:/Windows/Fonts/malgun.ttf" if os.path.exists("C:/Windows/Fonts/malgun.
 FONT_B = "C:/Windows/Fonts/malgunbd.ttf" if os.path.exists("C:/Windows/Fonts/malgunbd.ttf") else FONT
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--acc", default="78.4%")
+ap.add_argument("--acc", default="80.6%")
 ap.add_argument("--speed", default="2.3초")
 ap.add_argument("--note", default="사전학습 모델 그대로 (파인튜닝 전)")
 a = ap.parse_args()
@@ -83,7 +83,7 @@ for i, (head, body, color) in enumerate(STAGES):
 notes = [
     "채점 제약: GPU 없는 4코어 CPU · 500장 · 셀 타임아웃 2,400초 · Python 3.10 · 가중치는 download_weights.sh 로 사전 다운로드 (git 미포함)",
     "날짜 해석 규칙(연도 위치, 2자리 연도, 공백 구분, 영문 월, 키워드)은 요약서 규칙표와 동일하게 predict.ipynb 파서에 구현 · 라벨링 도구와 같은 규칙",
-    "성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% → 2패스 다수결 78.4% (측정 500장)",
+    "성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% → 2패스 다수결 78.4% → 규칙 v5 80.6% (측정 500장)",
 ]
 yy = TOP + BOX_H + 60
 for n in notes:
