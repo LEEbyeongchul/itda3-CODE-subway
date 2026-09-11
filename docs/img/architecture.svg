@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2600" height="760" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif">
 <rect width="2600" height="760" fill="white"/>
 <text x="60" y="72" font-size="34" font-weight="bold" fill="#1F2937">소비기한 OCR 파이프라인 아키텍처</text>
-<text x="60" y="110" font-size="19" fill="#4B5563">측정용 500장 정확도 81.8% · 4코어 CPU 장당 2.3초 · 인터넷 차단 환경 · 사전학습 모델 그대로 (파인튜닝 전)</text>
+<text x="60" y="110" font-size="19" fill="#4B5563">측정용 500장 정확도 81.8% · 4코어 CPU 장당 1.9초 · 인터넷 차단 환경 · 사전학습 모델 그대로 (파인튜닝 전)</text>
 <rect x="30" y="150" width="380" height="330" rx="18" fill="#EEF2F7" stroke="#94A3B8" stroke-width="3"/>
 <text x="52" y="196" font-size="26" font-weight="bold" fill="#111827">입력</text>
 <line x1="52" y1="210" x2="388" y2="210" stroke="#94A3B8" stroke-width="2"/>

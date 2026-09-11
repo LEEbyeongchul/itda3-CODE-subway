@@ -12,7 +12,7 @@ FONT_B = "C:/Windows/Fonts/malgunbd.ttf" if os.path.exists("C:/Windows/Fonts/mal
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--acc", default="81.8%")
-ap.add_argument("--speed", default="2.3초")
+ap.add_argument("--speed", default="1.9초")
 ap.add_argument("--note", default="사전학습 모델 그대로 (파인튜닝 전)")
 a = ap.parse_args()
 
