@@ -110,3 +110,16 @@ git add labels/labels_block1.csv && git commit -m "labels: block 1" && git push
 ```
 
 블록마다 파일이 달라 충돌 안 남. `?` 태그 단 것들은 모이면 같이 검토.
+
+## 정확도 측정 (모델·파라미터 바꿀 때마다)
+
+```bash
+# 1) 라벨된 이미지에 파이프라인 실행 (ITDA_DEBUG_CSV 를 주면 신뢰도·후보·시간도 저장)
+ITDA_INPUT_DIR=<라벨된 이미지 폴더> ITDA_OUTPUT_PATH=sub.csv ITDA_DEBUG_CSV=dbg.csv jupyter nbconvert --to notebook --execute predict.ipynb --output /tmp/o.ipynb
+# 2) 라벨과 대조 — 완전일치·필드별·층별·형식별·태그별, NONE 혼동, 정밀도-커버리지, 오답 목록
+python notebooks/eval.py --pred sub.csv --debug dbg.csv --out report.md
+# 3) 버전 비교
+python notebooks/compare.py "v3=v3_sub.csv|v3_dbg.csv" "new=sub.csv|dbg.csv"
+```
+
+새 모델·새 파라미터는 **같은 이미지 집합에서 이 표로 v3 를 이겨야** 교체한다. 기준 수치는 `docs/실험_기록.md`.

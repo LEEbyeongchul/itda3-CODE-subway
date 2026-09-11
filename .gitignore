@@ -24,3 +24,7 @@ env/
 # ===== OS =====
 .DS_Store
 Thumbs.db
+
+# 로컬 실험용 이미지 폴더
+랜덤 사진/
+_*.ipynb
