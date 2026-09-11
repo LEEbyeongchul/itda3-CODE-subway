@@ -52,15 +52,16 @@ for f in need:
 #      같은 버전의 headless 휠을 받아 weights/cv2_headless/ 에 풀어 두면 predict.ipynb 가 import 실패 시 이걸로 대체한다.
 import subprocess, sys, glob, zipfile
 shim = os.path.join("weights", "cv2_headless")
-if not os.path.isdir(os.path.join(shim, "cv2")):
+if not os.path.exists(os.path.join(shim, "cv2", "__init__.py")):
     wdir = os.path.join("weights", "_wheels"); os.makedirs(wdir, exist_ok=True)
     subprocess.run([sys.executable, "-m", "pip", "download", "--only-binary=:all:", "--no-deps", "-q",
                     "-d", wdir, "opencv-python-headless==4.10.0.84"], check=True)
-    whl = glob.glob(os.path.join(wdir, "opencv_python_headless-*.whl"))[0]
+    whl = sorted(glob.glob(os.path.join(wdir, "opencv_python_headless-*.whl")))[-1]
     with zipfile.ZipFile(whl) as z:
-        for n in z.namelist():
-            if n.startswith("cv2/"):
-                z.extract(n, shim)
+        z.extractall(shim)          # cv2/ 뿐 아니라 Linux 휠의 opencv_python_headless.libs/ (cv2.abi3.so 가 상대 경로로 찾음) 까지 전부
+    print(f"      휠 {os.path.basename(whl)} → {shim}/ ({', '.join(sorted(os.listdir(shim)))})")
+if not os.path.exists(os.path.join(shim, "cv2", "__init__.py")):
+    raise SystemExit(f"[ERROR] 예비 OpenCV 가 준비되지 않음: {shim}")
 print(f"  OK  weights/cv2_headless/cv2  (libGL 없는 서버용 예비 OpenCV)")
 print("가중치 준비 완료. 이제 predict.ipynb 는 오프라인으로 실행 가능하다.")
 PYEOF
