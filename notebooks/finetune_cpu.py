@@ -31,7 +31,8 @@ ap.add_argument("--lr", type=float, default=0.0001)
 ap.add_argument("--batch", type=int, default=32)
 ap.add_argument("--warmup", type=int, default=1, help="warmup epoch 수 (기본 config 는 5 → 짧은 학습에선 학습률이 안 오름)")
 ap.add_argument("--out", default="train_out/itda_en_rec")
-ap.add_argument("--skip-train", action="store_true", help="이미 학습된 best_accuracy 로 내보내기만")
+ap.add_argument("--skip-train", action="store_true", help="학습은 건너뛰고 평가·내보내기만")
+ap.add_argument("--ckpt", default="", help="내보낼 체크포인트 이름 (기본 latest, 예: best_accuracy, iter_epoch_2)")
 a = ap.parse_args()
 
 open(WRAPPER, "w", encoding="utf-8").write(WRAPPER_SRC)
@@ -46,7 +47,7 @@ def run(tool, extra):
            f"Train.dataset.data_dir={data}/", f"Train.dataset.label_file_list=[{data}/{a.train_list}]",
            "Train.loader.num_workers=0", f"Train.loader.batch_size_per_card={a.batch}",
            f"Eval.dataset.data_dir={data}/", f"Eval.dataset.label_file_list=[{data}/{a.val_list}]",
-           "Eval.loader.num_workers=0", "Eval.loader.batch_size_per_card=64"] + extra
+           "Eval.loader.num_workers=0", "Eval.loader.batch_size_per_card=8"] + extra   # Windows 에선 PaddleOCR 이 평가 마지막 배치를 버림 → 배치를 작게 해 여러 iter 로
     print(">>", tool, " ".join(extra)[:200], flush=True)
     t0 = time.time()
     r = subprocess.run(cmd, cwd=a.paddleocr)
@@ -63,10 +64,9 @@ if not a.skip_train:
                      "Global.eval_batch_step=[0,6]", "Global.print_batch_step=1", "Global.save_epoch_step=1",
                      f"Optimizer.lr.learning_rate={a.lr}", f"Optimizer.lr.warmup_epoch={a.warmup}"])
 
-best = os.path.join(out, "best_accuracy")
-if not os.path.exists(best + ".pdparams"):
-    best = os.path.join(out, "latest")
-    print("[WARN] best_accuracy 없음 → latest 사용")
+best = os.path.join(out, "latest")   # 학습 중 평가가 신뢰 불가(Windows 마지막 배치 스킵)할 수 있어 기본은 latest. --ckpt best_accuracy 로 바꿀 수 있음
+if getattr(a, "ckpt", None):
+    best = os.path.join(out, a.ckpt)
 run("eval.py", [f"Global.pretrained_model={best}"])
 run("eval.py", [f"Global.pretrained_model={os.path.abspath(a.pretrained)}"])   # 비교 기준: 사전학습 모델의 val 성능
 run("export_model.py", [f"Global.pretrained_model={best}", f"Global.save_inference_dir={out}/infer/"])
