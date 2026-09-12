@@ -165,10 +165,14 @@ def normalize(raw, tags):
             #   (4) 그 연도가 2028 이상이면서 일/월/년도 성립 → 일/월/년.  라벨 실측: 점 72:5, 슬래시 7:7 → 구분자는 순서를 못 정함.
             ymd = (2000 + int(a), int(b), int(c))
             dmy = (2000 + int(c), int(b), int(a))
+            mdy = (2000 + int(c), int(a), int(b))          # '06/18/23' → 미국식 MM.DD.YY (가운데가 월이면 둘 다 무효할 때만)
             ok = lambda t: 2017 <= t[0] <= 2031 and 1 <= t[1] <= 12 and 1 <= t[2] <= 31
             space_sep = re.search(r"\d\s+\d", s) is not None
             if day_first or (space_sep and ok(dmy)) or not ok(ymd) or (ymd[0] >= 2028 and ok(dmy)):
-                y, m, d, fmt = dmy[0], dmy[1], dmy[2], "DD.MM.YY"
+                if not ok(dmy) and ok(mdy):
+                    y, m, d, fmt = mdy[0], mdy[1], mdy[2], "MM.DD.YY"
+                else:
+                    y, m, d, fmt = dmy[0], dmy[1], dmy[2], "DD.MM.YY"
             else:
                 y, m, d, fmt = ymd[0], ymd[1], ymd[2], "YY.MM.DD"
     if y is not None and not (2017 <= y <= 2031):
