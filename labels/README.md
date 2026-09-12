@@ -30,7 +30,7 @@ python notebooks/label.py --block 1 --name 홍길동
 | 담당 | 3차 |
 | --- | --- |
 | 승아 | `--block 11` |
-| 서현 | `--block 12` |
+| 서영 | `--block 12` |
 | 민섭 | `--block 13` |
 | 서영 | `--block 14` |
 | 병철 | `--block 15` |
