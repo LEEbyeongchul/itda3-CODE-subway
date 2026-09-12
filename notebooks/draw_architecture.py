@@ -11,8 +11,8 @@ FONT = "C:/Windows/Fonts/malgun.ttf" if os.path.exists("C:/Windows/Fonts/malgun.
 FONT_B = "C:/Windows/Fonts/malgunbd.ttf" if os.path.exists("C:/Windows/Fonts/malgunbd.ttf") else FONT
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--acc", default="77.0%")
-ap.add_argument("--speed", default="2.9초")
+ap.add_argument("--acc", default="81.8%")
+ap.add_argument("--speed", default="1.9초")
 ap.add_argument("--note", default="사전학습 모델 그대로 (파인튜닝 전)")
 a = ap.parse_args()
 
@@ -20,7 +20,7 @@ STAGES = [
     ("입력", ["원본 사진 (3,352장 배포)", "EXIF 회전 보정", "긴 변 640px 축소 → 없으면 1024px", "그래도 없으면 도트매트릭스 폴백: 침식·블러로 점을 이어 재시도"], "#EEF2F7"),
     ("① 텍스트 탐지", ["PaddleOCR PP-OCRv5 mobile det", "약 5 MB · CPU 전용", "4코어 640px 기준 약 0.3초", "모든 글자 박스 검출"], "#DCEBFA"),
     ("② 텍스트 인식", ["PaddleOCR PP-OCRv5 mobile rec (en)", "약 8 MB · 숫자·영문·구분자", "글자 크기순 8개 배치 인식", "연도 포함 날짜 찾으면 잔글씨 생략"], "#DCEBFA"),
-    ("③ 2패스 재인식", ["후보 줄의 단어 박스만", "원본 해상도(≤2000px) 크롭", "검출기 재실행 없음", "자릿수 오독 보정"], "#E4F1E4"),
+    ("③ 2패스 재인식", ["후보 줄의 단어 박스만", "원본 해상도와 1024px 두 스케일로 재인식", "1패스까지 셋이 투표, 두 표 이상만 채택", "자릿수 하나 오독 보정"], "#E4F1E4"),
     ("④ 후처리 규칙", ["오독 복원 2O27→2027, 0ct→Oct", "정규식 4단계 (완전 날짜 → 공백·6자리 → 연월 → 월일)", "연도 2017~2031 검증, 긴 숫자열 제거", "신뢰 등급 우선 → 가장 늦은 날짜"], "#FBEEDB"),
     ("출력", ["YYYY-MM-DD", "NONE-MM-DD (연도 없음)", "YYYY-MM-NONE (일 없음)", "NONE (판독 불가)"], "#EEF2F7"),
 ]
@@ -83,7 +83,7 @@ for i, (head, body, color) in enumerate(STAGES):
 notes = [
     "채점 제약: GPU 없는 4코어 CPU · 500장 · 셀 타임아웃 2,400초 · Python 3.10 · 가중치는 download_weights.sh 로 사전 다운로드 (git 미포함)",
     "날짜 해석 규칙(연도 위치, 2자리 연도, 공백 구분, 영문 월, 키워드)은 요약서 규칙표와 동일하게 predict.ipynb 파서에 구현 · 라벨링 도구와 같은 규칙",
-    "성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% (측정 500장)",
+    "성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% → 2패스 다수결 78.4% → 규칙 v5 80.6% → 일 손실 규칙 81.8% (측정 500장)",
 ]
 yy = TOP + BOX_H + 60
 for n in notes:
