@@ -12,7 +12,6 @@ images/
 val_images/
 *.zip
 submission.csv
-
 # ===== Python =====
 __pycache__/
 *.py[cod]
@@ -20,11 +19,19 @@ __pycache__/
 .venv/
 venv/
 env/
-
 # ===== OS =====
 .DS_Store
 Thumbs.db
-
 # 로컬 실험용 이미지 폴더
 랜덤 사진/
 _*.ipynb
+
+# ===== 파인튜닝 데이터 (용량 큼, zip 으로 Colab 에 전달) =====
+data/rec_train/
+train_out/
+notebooks/_run_paddle_tool.py
+data/val500/
+data/rec_synth/
+data/val300/
+data/val_rest/
+data/dbg_*/

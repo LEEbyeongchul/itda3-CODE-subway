@@ -11,6 +11,7 @@ labels/sample.csv 에서 내 블록의 이미지를 차례로 띄운다. 입력�
     25.06.26 2            → 2025-06-26, 태그 2(날짜 두 개 병기, 소비기한만 적은 것)
     20/05/2026            → 2026-05-20 (연도가 뒤면 자동으로 일/월/년)
     050926 d              → 2026-09-05 (d = 일이 먼저: DDMMYY)
+    03112021 또는 0311 2021 → 2021-03-11 (YYYYMMDD 로 읽으면 연도가 무효라 MMDDYYYY 로 재해석)
     30 12 23 d e          → 2023-12-30, 각인
     06.26  또는 NONE.06.26 → NONE-06-26 (연도 없음)
     2027.7 또는 27.11     → 2027-07-NONE / 2027-11-NONE (일 없음)
@@ -113,7 +114,15 @@ def normalize(raw, tags):
     if len(nums) == 1:
         t = nums[0]
         if len(t) == 8:
-            y, m, d, fmt = int(t[:4]), int(t[4:6]), int(t[6:]), "YYYYMMDD"
+            ok = lambda y, m, d: 2017 <= y <= 2031 and 1 <= m <= 12 and 1 <= d <= 31
+            y1, m1, d1 = int(t[:4]), int(t[4:6]), int(t[6:])
+            m2, d2, y2 = int(t[:2]), int(t[2:4]), int(t[4:])
+            if ok(y1, m1, d1):
+                y, m, d, fmt = y1, m1, d1, "YYYYMMDD"
+            elif ok(y2, m2, d2):          # '03112021' → YYYYMMDD 로는 연도 0311 이 되어 무효 → MMDDYYYY 로 재시도
+                y, m, d, fmt = y2, m2, d2, "MMDDYYYY"
+            else:
+                y, m, d, fmt = y1, m1, d1, "YYYYMMDD"
         elif len(t) == 6:
             if day_first:
                 y, m, d, fmt = 2000 + int(t[4:]), int(t[2:4]), int(t[:2]), "DDMMYY"
@@ -125,7 +134,15 @@ def normalize(raw, tags):
             raise ValueError(f"숫자 덩어리 길이 {len(t)} 는 해석 불가")
     elif len(nums) == 2:
         a, b = nums
-        if len(a) == 4:                      # '2027.7' → 연·월만, 일 없음 → 2027-07-NONE (일본 賞味期限 등)
+        if len(a) == 4 and len(b) == 4:      # '0311 2021' → MMDD YYYY, '2021 0311' → YYYY MMDD
+            ok = lambda y, m, d: 2017 <= y <= 2031 and 1 <= m <= 12 and 1 <= d <= 31
+            if ok(int(b), int(a[:2]), int(a[2:])):
+                y, m, d, fmt = int(b), int(a[:2]), int(a[2:]), "MMDD YYYY"
+            elif ok(int(a), int(b[:2]), int(b[2:])):
+                y, m, d, fmt = int(a), int(b[:2]), int(b[2:]), "YYYY MMDD"
+            else:
+                y, m, d, fmt = int(a), int(b), None, "YYYY.MM"
+        elif len(a) == 4:                      # '2027.7' → 연·월만, 일 없음 → 2027-07-NONE (일본 賞味期限 등)
             y, m, d, fmt = int(a), int(b), None, "YYYY.MM"
         elif len(b) == 4:                    # '12.2020' → 유럽식 월.연도, 일 없음 → 2020-12-NONE
             y, m, d, fmt = int(b), int(a), None, "MM.YYYY"
