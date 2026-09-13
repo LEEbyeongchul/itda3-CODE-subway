@@ -6,6 +6,7 @@
 - **운영진 Q&A 확정사항** (평가셋 500장, 부분점수, `NONE-MM-DD`, 일/월/년 규칙 등): [docs/QA_확정사항.md](docs/QA_확정사항.md)
 - **전체 계획 · 일정 · 역할 · 작업 목록**: [docs/프로젝트_계획.md](docs/프로젝트_계획.md)
 - **검증셋 라벨링 방법**: [labels/README.md](labels/README.md)
+- **가산점 증빙 — 직접 라벨링 데이터 (`custom_data/`)**: 라벨 정본은 `custom_data/labels_all.csv` (배포 3,352장 전수, 열 설명·폴더 구조는 [custom_data/README.md](custom_data/README.md)). 사진은 배포 데이터를 그대로 써서 이미지는 없음.
 - **날짜 해석 규칙** (운영진: 모호한 값은 팀 규칙으로 채점 → 요약서 삽입용): [docs/날짜_해석_규칙.md](docs/날짜_해석_규칙.md)
 
 ---
@@ -157,6 +158,7 @@ ITDA_DEBUG=1 ITDA_INPUT_DIR=./val_images ITDA_OUTPUT_PATH=./submission.csv \
 ├── requirements.txt         # 버전 고정 의존성 (nbconvert·ipykernel 포함)
 ├── download_weights.sh      # EasyOCR·PaddleOCR 가중치 사전 다운로드
 ├── README.md
+├── custom_data/             # 가산점 증빙: 직접 라벨링 3,352장 (labels_all.csv 가 라벨 정본, 구조는 custom_data/README.md)
 ├── docs/
 │   └── ITDA3_참가안내서.md    # 대회 규정·일정·채점·Q&A 확정사항
 ├── weights/                 # 가중치 (gitignore, .gitkeep 만 추적)
