@@ -1,5 +1,5 @@
 # 실험: 파인튜닝 인식기를 **2패스 전용**으로 쓴다 (본선계획 §4.1-4). 1패스는 사전학습으로 후보 줄을 찾고, 크롭 재인식만 파인튜닝 인식기로.
-#   base     : 사전학습만 (P2_KEEP + RULE_SPAN 켠 상태 = 채택 예정 기준선)
+#   base     : 사전학습만 (9/23 최종 기본값: P2_KEEP 등급 인식 + COLON + TRUNC, SPAN 꺼짐)
 #   ft_p2    : 2패스 크롭 재인식만 파인튜닝 인식기 (단독)
 #   ft_union : 사전학습 2패스 후보 ∪ 파인튜닝 2패스 후보 → 선택 규칙 (다수결 대신 합집합)
 #   ft_fb    : ft_p2 가 NONE 이면 base 로 (안전판)
@@ -15,7 +15,7 @@ nb = json.load(open("predict.ipynb", encoding="utf-8"))
 cells = ["".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code"]
 g = {"__name__": "__exp__", "os": os}
 for i in (1, 2, 3, 4, 5): exec(cells[i], g)
-g["P2_KEEP"] = True; g["RULE_SPAN"] = True            # 기준선: 채택 예정 규칙. 콜론·한자리확장은 env 로 (기본 꺼짐)
+g["P2_KEEP"] = True; g["RULE_SPAN"] = False; g["RULE_COLON"] = True; g["RULE_TRUNC"] = True   # 기준선 = 9/23 최종 기본값 (SPAN 은 기각)
 load_image, pass1, pass2, select_date, reader = g["load_image"], g["pass1"], g["pass2"], g["select_date"], g["reader"]
 from paddleocr import TextRecognition
 ft_rec = TextRecognition(model_name="en_PP-OCRv5_mobile_rec", model_dir=FT_DIR, device="cpu", cpu_threads=int(os.environ["ITDA_THREADS"]))
