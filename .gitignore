@@ -37,3 +37,6 @@ data/val_rest/
 data/dbg_*/
 data/rec_train_*/
 data/zips/
+
+# 본선 추가 촬영 사진 (라벨 CSV 만 git, 사진은 드라이브)
+custom_photos/
