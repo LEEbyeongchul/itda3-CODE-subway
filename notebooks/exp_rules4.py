@@ -8,12 +8,15 @@ cells = ["".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code"]
 g = {"__name__": "__exp__", "os": os}
 for i in (1, 2, 3, 4, 5): exec(cells[i], g)
 load_image, pass1, pass2, select_date = g["load_image"], g["pass1"], g["pass2"], g["select_date"]
-FLAGS = ["P2_KEEP", "RULE_SPAN", "RULE_COLON", "RULE_TRUNC"]
-COMBOS = {"base": [], "keep": ["P2_KEEP"], "all4": FLAGS}
+FLAGS = ["P2_KEEP", "RULE_SPAN", "RULE_COLON", "RULE_TRUNC", "P2_VOTE640"]
+DEFAULTS = {f: g.get(f, False) for f in FLAGS}   # 노트북 기본값 (env 반영). 콤보에 없는 플래그는 기본값 유지
+COMBOS = {"base": [], "keep": ["P2_KEEP"], "all4": FLAGS[:4], "cur": None, "v640": ["P2_VOTE640"]}   # cur = 기본값 그대로, v640 = 기본값 + 640 표
 if os.environ.get("EXP_COMBOS"):   # 예: EXP_COMBOS=all4 → 그 구성만 (base 는 results/join 의 old 예측으로 대신)
     COMBOS = {k: v for k, v in COMBOS.items() if k in os.environ["EXP_COMBOS"].split(",")}
 def setf(on):
-    for f in FLAGS: g[f] = f in on
+    for f in FLAGS: g[f] = DEFAULTS[f] if on is None else (f in on)
+    if on is not None and on and on[0] == "P2_VOTE640":   # v640 는 기본값 위에 얹는다
+        for f in FLAGS: g[f] = DEFAULTS[f] or f in on
 def key(b):
     if not b: return "NONE"
     y = b["y"] if b["y"] is not None else "NONE"; d = "NONE" if b["d"] is None else f"{b['d']:02d}"
