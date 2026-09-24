@@ -91,7 +91,10 @@ def main():
         if len(target) < a.min_len:
             continue
         try:
-            img = load_image(os.path.join(ROOT, "images", r.file))
+            img_path = os.path.join(ROOT, "images", r.file)
+            if not os.path.exists(img_path):                       # 본선 직접 촬영분(블록 16~20)은 custom_photos/ (드라이브에서 받아 둘 것)
+                img_path = os.path.join(ROOT, "custom_photos", r.file)
+            img = load_image(img_path)
         except Exception as e:
             print(f"[WARN] {r.image_id}: {e}")
             continue
