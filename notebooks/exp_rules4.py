@@ -25,6 +25,9 @@ J = pd.read_csv("results/join_all3352_v6.csv", dtype=str, keep_default_na=False)
 T = J[~J.block.isin(["1", "2", "3", "4", "5"])].iloc[K::N]
 out = f"results/exp_rules4_{os.environ.get('EXP_TAG', '2026-09-22')}_{K}.csv"
 rows = []
+if os.environ.get("EXP_RESUME") == "1" and os.path.exists(out):   # 중단된 실행 이어하기 (9/26 메모리 부족 강제 종료): 이미 저장된 장은 건너뛴다
+    prev = pd.read_csv(out, dtype=str, keep_default_na=False); rows = prev.to_dict("records"); T = T[~T.image_id.isin(prev.image_id)]
+    print(f"resume: {len(prev)}장 저장됨, {len(T)}장 남음", flush=True)
 for n, (_, r) in enumerate(T.iterrows()):
     t = time.time(); img = load_image(f"images/{r.file}"); rec = dict(image_id=r.image_id, label=r.final_date, old=r.pred, tags=r.tags)
     for name, on in COMBOS.items():
