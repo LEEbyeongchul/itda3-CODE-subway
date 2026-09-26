@@ -84,6 +84,7 @@ def main():
     ap.add_argument("--neg", type=int, default=0, help="(9/26) 장당 부정 샘플 상한. 날짜가 아닌 줄(로트·시각·품목번호)을 사전학습 인식기 출력 그대로 라벨해 neg_list.txt 로. "
                     "축소본 인식과 원본 크롭 재인식이 같은 글자로 읽힌 줄만(의사 라벨 품질 게이트). 날짜로 파싱되는 줄·날짜 크롭과 겹치는 줄은 제외. 학습 전용, val 에 넣지 않는다")
     ap.add_argument("--neg-conf", type=float, default=0.9, help="부정 샘플 인식 확신도 하한")
+    ap.add_argument("--resume", action="store_true", help="(9/26) 중단된 추출 이어하기: <out>/manifest.csv 의 행을 읽고 <out>/done_ids.txt 에 있는 장은 건너뛴다 (50장마다 저장)")
     ap.add_argument("--center", action="store_true", help="(9/26) 블록 16 이상(직접 촬영, 날짜가 화면 가운데)에서 OCR 매칭이 실패하면 이미지 중앙에 가장 가까운 줄 박스를 날짜 크롭으로 뽑아 "
                     "center_list.txt 에 따로 쓴다 (검수 후 train_list 에 합칠 것). 사전학습 OCR 이 전혀 못 읽는 도트·각인 샘플을 학습에 넣기 위한 예외")
     a = ap.parse_args()
@@ -112,6 +113,20 @@ def main():
     out_img = os.path.join(ROOT, a.out, "imgs")
     os.makedirs(out_img, exist_ok=True)
     rows, n_ok, n_neg, n_center = [], 0, 0, 0
+    done_path = os.path.join(ROOT, a.out, "done_ids.txt"); done = set()
+    if a.resume and os.path.exists(done_path):
+        done = set(open(done_path, encoding="utf-8").read().split())
+        mp = os.path.join(ROOT, a.out, "manifest.csv")
+        if os.path.exists(mp):
+            rows = pd.read_csv(mp, dtype=str, keep_default_na=False).to_dict("records")
+            for row in rows:
+                row["kept"] = int(row["kept"]); row["dist"] = int(row["dist"]); row["w"] = int(row["w"]); row["h"] = int(row["h"])
+            n_ok = sum(1 for row in rows if row["kept"] == 1); n_neg = sum(1 for row in rows if row["kept"] == 3); n_center = sum(1 for row in rows if row["kept"] == 2)
+        print(f"resume: {len(done)}장 완료 상태에서 이어함 (채택 {n_ok} · 부정 {n_neg} · 중앙 {n_center})", flush=True)
+    labels = labels[~labels.image_id.isin(done)]
+    fdone = open(done_path, "a", encoding="utf-8")
+    def _save_manifest():
+        pd.DataFrame(rows).to_csv(os.path.join(ROOT, a.out, "manifest.csv"), index=False, encoding="utf-8-sig")
     for i, r in enumerate(labels.itertuples(index=False), 1):
         blk = int(r.block)
         img_dir = "custom_photos" if blk >= 16 else "images"      # 블록 16~20 = 본선 직접 촬영 (register_photos.py 가 custom_photos/ 에 둔다)
@@ -230,9 +245,11 @@ def main():
                     rows.append({"image_id": fn[:-4], "block": r.block, "label": lab, "ocr_text": lab, "dist": 0, "source": "neg",
                                  "w": crops[k].shape[1], "h": crops[k].shape[0], "kept": 3, "flag": "", "bbox": ",".join(str(int(v)) for v in pool[k][0])})
                     got += 1; n_neg += 1
+        fdone.write(r.image_id + "\n"); fdone.flush()
         if i % 50 == 0:
-            print(f"[{i}/{len(labels)}] 채택 {n_ok}  부정 {n_neg}  중앙 {n_center}", flush=True)
+            print(f"[{i}/{len(labels)}] 채택 {n_ok}  부정 {n_neg}  중앙 {n_center}", flush=True); _save_manifest()
 
+    fdone.close()
     man = pd.DataFrame(rows)
     man.to_csv(os.path.join(ROOT, a.out, "manifest.csv"), index=False, encoding="utf-8-sig")
     kept = man[man.kept == 1]
