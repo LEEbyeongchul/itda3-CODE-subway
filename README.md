@@ -74,6 +74,7 @@ bash download_weights.sh
 | --- | --- | --- |
 | `weights/PP-OCRv5_mobile_det/` | PaddleOCR 텍스트 탐지기 (기본). inference.json / .pdiparams / .yml, config.json | ~5 MB |
 | `weights/en_PP-OCRv5_mobile_rec/` | PaddleOCR 영문 인식기 (기본). 같은 4개 파일 | ~8 MB |
+| `weights/korean_PP-OCRv5_mobile_rec/` | PaddleOCR 한국어 인식기. 1패스 줄을 한 번 더 읽어 `소비·까지·EXP` 줄의 날짜를 후보에 보탠다 (`ITDA_KO_LINE`, 기본 켬). 없으면 그 단계만 생략 | ~13 MB |
 | `weights/cv2_headless/cv2/` | headless OpenCV 예비본. paddleocr 가 강제 설치하는 비headless OpenCV 가 libGL 없는 Linux 에서 import 실패할 때 노트북이 자동으로 이걸로 대체 | ~60 MB (Linux) |
 | `weights/craft_mlt_25k.pth` | EasyOCR CRAFT 검출기. `ITDA_DET=craft` 비교용 | ~79 MB |
 | `weights/english_g2.pth` | EasyOCR 영문 인식기. `ITDA_REC=easyocr` 비교용 | ~14 MB |

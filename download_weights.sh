@@ -10,6 +10,7 @@
 #   weights/PP-OCRv5_mobile_det/                 PaddleOCR 텍스트 탐지기 (기본 탐지기, 약 5MB)
 #   weights/en_PP-OCRv5_mobile_rec/              PaddleOCR 영문 인식기 (기본 인식기, 약 8MB)
 #   weights/en_PP-OCRv5_mobile_rec_ft/           위 인식기를 우리 라벨 크롭 393장으로 파인튜닝한 것 (NONE 폴백용, 약 8MB, GitHub Release 첨부)
+#   weights/korean_PP-OCRv5_mobile_rec/          PaddleOCR 한국어 인식기 (2차 의견 ITDA_KO_LINE 용, 약 13MB, 9/26 채택). 없으면 그 단계만 조용히 생략
 #       각 폴더: inference.json / inference.pdiparams / inference.yml / config.json
 #   weights/cv2_headless/cv2/                    headless OpenCV 예비본 (libGL 없는 Linux 서버에서 import cv2 실패 대비, 약 60MB)
 set -euo pipefail
@@ -32,7 +33,8 @@ from paddleocr import TextDetection, TextRecognition
 FILES = ["inference.json", "inference.pdiparams", "inference.yml", "config.json"]
 need = ["craft_mlt_25k.pth", "english_g2.pth"]
 for name, cls, kw in [("PP-OCRv5_mobile_det", TextDetection, {"enable_mkldnn": False}),
-                      ("en_PP-OCRv5_mobile_rec", TextRecognition, {})]:
+                      ("en_PP-OCRv5_mobile_rec", TextRecognition, {}),
+                      ("korean_PP-OCRv5_mobile_rec", TextRecognition, {})]:
     dst = os.path.join("weights", name)
     if not os.path.exists(os.path.join(dst, "inference.pdiparams")):
         cls(model_name=name, device="cpu", **kw)            # 다운로드 트리거

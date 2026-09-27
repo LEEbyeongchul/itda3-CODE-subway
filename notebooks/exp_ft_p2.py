@@ -3,7 +3,7 @@
 #   ft_p2    : 2패스 크롭 재인식만 파인튜닝 인식기 (단독)
 #   ft_union : 사전학습 2패스 후보 ∪ 파인튜닝 2패스 후보 → 선택 규칙 (다수결 대신 합집합)
 #   ft_fb    : ft_p2 가 NONE 이면 base 로 (안전판)
-# 사용: .venv/Scripts/python notebooks/exp_ft_p2.py <K> <N> [가중치 폴더]   → results/exp_ft_p2_<날짜>_<K>.csv
+# 사용: EXP_TAG=_full .venv/Scripts/python notebooks/exp_ft_p2.py <K> <N> [가중치 폴더]   → results/exp_ft_p2<태그>_<날짜>_<K>.csv
 #   가중치 폴더 기본값 weights/en_PP-OCRv5_mobile_rec_ft (Colab full 가중치, 크롭 정확도 89.8%). 판정용 2,852장(블록 1~5 제외).
 import json, os, sys, time, datetime, pandas as pd
 os.environ.setdefault("ITDA_THREADS", "4")
@@ -36,7 +36,8 @@ def pass2_ft(img, cands):
 J = pd.read_csv("results/join_all3352_v6.csv", dtype=str, keep_default_na=False)
 T = J[~J.block.isin(["1", "2", "3", "4", "5"])].iloc[K::N]
 if LIMIT: T = T.head(LIMIT)
-out = f"results/exp_ft_p2_{datetime.date.today()}_{K}.csv"
+TAG = os.environ.get("EXP_TAG", "")                       # 결과 파일 태그(예: _full) — 같은 날 v1 결과와 충돌 방지
+out = f"results/exp_ft_p2{TAG}_{datetime.date.today()}_{K}.csv"
 rows = []
 for n, (_, r) in enumerate(T.iterrows()):
     t = time.time(); img = load_image(f"images/{r.file}"); rec = dict(image_id=r.image_id, label=r.final_date, old=r.pred, tags=r.tags)
