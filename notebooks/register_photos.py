@@ -10,7 +10,7 @@
   2) labels/sample.csv 에 블록 번호와 함께 추가 (이미 등록된 파일은 건너뜀 → 여러 번 실행해도 됨).
 블록 번호: 승아 16 · 서현 17 · 민섭 18 · 서영 19 · 병철 20 (그 외 이름은 --block 으로 지정)
 custom_photos/ 는 git 에 안 올라간다 (용량). 사진은 드라이브 공유 폴더에도 같이 올린다. 라벨 CSV(labels/labels_block16.csv 등)만 git 에 올린다."""
-import os, csv, glob, argparse, re
+import os, csv, glob, argparse, re, hashlib
 from PIL import Image, ImageOps
 
 BLOCK = {"승아": 16, "서현": 17, "민섭": 18, "서영": 19, "병철": 20}
@@ -39,12 +39,21 @@ n = max(nums, default=0)
 src_files = sorted(f for f in glob.glob(os.path.join(a.src, "*")) if f.lower().endswith((".jpg", ".jpeg", ".png")))
 if not src_files:
     raise SystemExit(f"{a.src} 에 jpg/png 가 없습니다 (HEIC 는 폰에서 '호환성 우선' 또는 jpg 변환 후)")
-added = []
+# 원본 내용(md5)으로 중복을 거른다: 이미 등록한 사진, 같은 사진의 '(1)' 사본 모두 건너뜀. 기록은 custom_photos/_registry.csv
+REG = os.path.join(a.dst, "_registry.csv")
+reg = {}
+if os.path.exists(REG):
+    reg = {r["md5"]: r["out"] for r in csv.DictReader(open(REG, encoding="utf-8-sig"))}
+added, new_reg, n_dup = [], [], 0
 for f in src_files:
+    md5 = hashlib.md5(open(f, "rb").read()).hexdigest()
+    if md5 in reg:
+        n_dup += 1
+        continue
     n += 1
     out_name = f"x{abbr}{n:04d}.jpg"
-    if out_name in known:
-        continue
+    reg[md5] = out_name
+    new_reg.append({"md5": md5, "src": os.path.basename(f), "out": out_name})
     with Image.open(f) as im:
         im = ImageOps.exif_transpose(im).convert("RGB")
         w, h = im.size
@@ -60,5 +69,12 @@ if added:
     with open(a.sample, "a", newline="", encoding="utf-8") as fo:
         w = csv.DictWriter(fo, fieldnames=["block", "image_id", "file", "stratum", "w", "h"])
         w.writerows(added)
-print(f"{a.name}: {len(added)}장 등록 → 블록 {block}, {a.dst}/x{abbr}0001.jpg ~ (원본 {len(src_files)}장)")
+if new_reg:
+    first = not os.path.exists(REG)
+    with open(REG, "a", newline="", encoding="utf-8") as fo:
+        w = csv.DictWriter(fo, fieldnames=["md5", "src", "out"])
+        if first:
+            w.writeheader()
+        w.writerows(new_reg)
+print(f"{a.name}: 새로 {len(added)}장 등록 → 블록 {block} (원본 {len(src_files)}장 중 중복·기등록 {n_dup}장 건너뜀)")
 print(f"다음: python notebooks/label.py --block {block} --name {a.name} --images {a.dst}")
