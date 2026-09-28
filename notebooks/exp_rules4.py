@@ -8,21 +8,28 @@ cells = ["".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code"]
 g = {"__name__": "__exp__", "os": os}
 for i in (1, 2, 3, 4, 5): exec(cells[i], g)
 load_image, pass1, pass2, select_date = g["load_image"], g["pass1"], g["pass2"], g["select_date"]
-FLAGS = ["P2_KEEP", "RULE_SPAN", "RULE_COLON", "RULE_TRUNC", "P2_VOTE640", "KO_KEYWORD", "KO_LINE"]
+FLAGS = ["P2_KEEP", "RULE_SPAN", "RULE_COLON", "RULE_TRUNC", "P2_VOTE640", "KO_KEYWORD", "KO_LINE", "RULE_SEPMIX", "RULE_TAIL", "RULE_YMSEP", "RULE_REREAD"]
 DEFAULTS = {f: g.get(f, False) for f in FLAGS}   # 노트북 기본값 (env 반영). 콤보에 없는 플래그는 기본값 유지
-COMBOS = {"base": [], "keep": ["P2_KEEP"], "all4": FLAGS[:4], "cur": None, "v640": ["P2_VOTE640"], "ko": ["KO_KEYWORD"], "kol": ["KO_LINE"]}   # cur = 기본값 그대로, v640 = 기본값 + 640 표
+COMBOS = {"base": [], "keep": ["P2_KEEP"], "all4": FLAGS[:4], "cur": None, "v640": ["P2_VOTE640"], "ko": ["KO_KEYWORD"], "kol": ["KO_LINE"], "sep": ["RULE_SEPMIX"], "tail": ["RULE_TAIL"], "qr": ["RULE_SEPMIX", "RULE_TAIL"],
+          "fin": ["RULE_SEPMIX", "RULE_TAIL", "RULE_YMSEP", "RULE_REREAD"]}   # fin = 기본값 + (q)(r)(s)(t) 네 규칙 (9/28 최종 구성 후보. 한국어 2차 의견 모드는 env ITDA_KO_LINE_MODE 로). cur = 기본값 그대로, v640 = 기본값 + 640 표, sep = 기본값 + (q) 구분자 일치, tail = 기본값 + (r) 꼬리 숫자, qr = 기본값 + (q) + (r) 한 번에 (책임은 verify_rule.py 가 규칙별 재실행으로 가름)
 if os.environ.get("EXP_COMBOS"):   # 예: EXP_COMBOS=all4 → 그 구성만 (base 는 results/join 의 old 예측으로 대신)
     COMBOS = {k: v for k, v in COMBOS.items() if k in os.environ["EXP_COMBOS"].split(",")}
 def setf(on):
     for f in FLAGS: g[f] = DEFAULTS[f] if on is None else (f in on)
-    if on is not None and on and on[0] in ("P2_VOTE640", "KO_KEYWORD", "KO_LINE"):   # v640·ko 는 기본값 위에 얹는다
+    if on is not None and on and on[0] in ("P2_VOTE640", "KO_KEYWORD", "KO_LINE", "RULE_SEPMIX", "RULE_TAIL"):   # v640·ko·sep·tail 은 기본값 위에 얹는다
         for f in FLAGS: g[f] = DEFAULTS[f] or f in on
 def key(b):
     if not b: return "NONE"
     y = b["y"] if b["y"] is not None else "NONE"; d = "NONE" if b["d"] is None else f"{b['d']:02d}"
     return f"{y}-{b['m']:02d}-{d}"
 J = pd.read_csv("results/join_all3352_v6.csv", dtype=str, keep_default_na=False)
-T = J[~J.block.isin(["1", "2", "3", "4", "5"])].iloc[K::N]
+T = J[~J.block.isin(["1", "2", "3", "4", "5"])]
+if os.environ.get("EXP_FIRST"):   # 먼저 돌릴 image_id 목록(한 줄에 하나). 규칙이 발동할 만한 장을 앞에 두어 중간 저장본으로 일찍 판정한다. 전체 장수·분할은 그대로
+    first = set(open(os.environ["EXP_FIRST"], encoding="utf-8").read().split())
+    T = pd.concat([T[T.image_id.isin(first)], T[~T.image_id.isin(first)]])
+    if os.environ.get("EXP_ONLY_FIRST") == "1":   # 목록에 있는 장만 재고 끝낸다 (목록 밖은 다른 실험 결과와 같다고 확인된 경우)
+        T = T[T.image_id.isin(first)]
+T = T.iloc[K::N]
 out = f"results/exp_rules4_{os.environ.get('EXP_TAG', '2026-09-22')}_{K}.csv"
 rows = []
 if os.environ.get("EXP_RESUME") == "1" and os.path.exists(out):   # 중단된 실행 이어하기 (9/26 메모리 부족 강제 종료): 이미 저장된 장은 건너뛴다
@@ -35,6 +42,7 @@ for n, (_, r) in enumerate(T.iterrows()):
         c2 = pass2(img, list(c1)) if c1 else []
         if g["KO_KEYWORD"] and c2: c2 = g["keyword_filter"](img, c2)
         if g["KO_LINE"]: c2 = g["keyword_line_reread"](img, c2, seen)
+        if g.get("RULE_REREAD"): c2 = g["broken_line_reread"](img, c2, seen)   # (s) 노트북 실행 셀과 같은 순서
         rec[name] = key(select_date(c2)) if c2 else "NONE"
     rec["sec"] = round(time.time() - t, 1); rows.append(rec)
     if n % 25 == 0:
