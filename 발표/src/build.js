@@ -6,13 +6,24 @@ pres.layout = "LAYOUT_16x9"; // 10 x 5.625 in
 pres.title = "[CODE]_서브웨이 본선 발표";
 
 const RED = "8B0000", INK = "1A1A1A", MUTE = "6B6B6B", CARD = "F2F2F2", LINE = "BFBFBF", WHITE = "FFFFFF", PINK = "F6E3E3";
-const KR = "맑은 고딕";
+const KR = "Pretendard SemiBold";
+// 글꼴 자체가 SemiBold 라 굵게(b) 속성을 또 주면 가짜 굵기가 덧씌워진다 → 모든 글자에서 bold 를 빼고 글꼴을 통일
+const noBold = (o) => { if (!o) return o; const c = Object.assign({}, o); delete c.bold; c.fontFace = KR; return c; };
+const fixRuns = (t) => Array.isArray(t) ? t.map((r) => Array.isArray(r) ? fixRuns(r) : (r && typeof r === "object" ? Object.assign({}, r, { options: noBold(r.options || {}) }) : r)) : t;
+const _addSlide = pres.addSlide.bind(pres);
+pres.addSlide = function () {
+  const s = _addSlide.apply(null, arguments);
+  const at = s.addText.bind(s), tb = s.addTable.bind(s);
+  s.addText = (t, o) => at(fixRuns(t), noBold(o));
+  s.addTable = (rows, o) => tb(fixRuns(rows), o);
+  return s;
+};
 const IMG = (n) => path.join(__dirname, "img", n);
 let pageNo = 0;
 
 function pageNum(s, dark) {
   pageNo += 1;
-  s.addText(String(pageNo), { x: 9.3, y: 0.12, w: 0.5, h: 0.25, fontFace: "Arial", fontSize: 9, bold: true, color: dark ? WHITE : INK, align: "right", margin: 0, isTextBox: true });
+  s.addText(String(pageNo), { x: 9.3, y: 0.12, w: 0.5, h: 0.25, fontFace: KR, fontSize: 9, bold: true, color: dark ? WHITE : INK, align: "right", margin: 0, isTextBox: true });
 }
 function content(title, accent) {
   const s = pres.addSlide(); s.background = { color: WHITE };
@@ -25,7 +36,7 @@ function content(title, accent) {
 }
 function section(num, title, sub) {
   const s = pres.addSlide(); s.background = { color: RED };
-  s.addText(String(num), { x: 5.2, y: 0.6, w: 4.8, h: 5.4, fontFace: "Arial", fontSize: 400, bold: true, color: WHITE, align: "right", valign: "middle", margin: 0, isTextBox: true });
+  s.addText(String(num), { x: 5.2, y: 0.6, w: 4.8, h: 5.4, fontFace: KR, fontSize: 400, bold: true, color: WHITE, align: "right", valign: "middle", margin: 0, isTextBox: true });
   s.addShape(pres.shapes.RECTANGLE, { x: 1.05, y: 3.05, w: 0.07, h: 0.5, fill: { color: WHITE }, line: { color: WHITE, width: 0 } });
   s.addText(title, { x: 1.22, y: 2.98, w: 5, h: 0.65, fontFace: KR, fontSize: 28, bold: true, color: WHITE, margin: 0, valign: "middle", isTextBox: true });
   if (sub) s.addText(sub, { x: 1.22, y: 3.68, w: 5.2, h: 0.4, fontFace: KR, fontSize: 12, color: WHITE, margin: 0, isTextBox: true });
@@ -41,7 +52,7 @@ function strip(s, parts, y, h) {
 }
 function badge(s, n, x, y) {
   s.addShape(pres.shapes.OVAL, { x, y, w: 0.34, h: 0.34, fill: { color: RED }, line: { color: RED, width: 0 } });
-  s.addText(n, { x, y, w: 0.34, h: 0.34, fontFace: "Arial", fontSize: 10, bold: true, color: WHITE, align: "center", valign: "middle", margin: 0, isTextBox: true });
+  s.addText(n, { x, y, w: 0.34, h: 0.34, fontFace: KR, fontSize: 10, bold: true, color: WHITE, align: "center", valign: "middle", margin: 0, isTextBox: true });
 }
 function table(s, rows, x, y, w, colW, o) {
   o = o || {};
@@ -72,13 +83,13 @@ section(1, "문제 정의", "무엇을, 어떤 제약 아래에서 풀었는가"
 // 3. 제약이 설계를 정했다
 {
   const s = content("출발점 : ", "제약이 설계를 결정했다");
-  const items = [["3,352장", "정답 라벨 없음", "상품 뒷면 사진만 제공. 정확도를 잴 자(尺)부터 직접 만들어야 했다"],
+  const items = [["3,352장", "정답 라벨 없음", "상품 뒷면 사진만 제공. 정확도를 잴 기준부터 직접 만들어야 했다"],
                  ["4코어 CPU", "GPU 없음 · 오프라인", "채점 서버 Ubuntu 22.04, RAM 8GB. 무거운 모델·외부 API 사용 불가"],
                  ["2,500초", "500장 제한 시간", "초과하면 결과 파일이 나오지 않아 정확도까지 0점. 장당 5초가 상한"]];
   items.forEach((it, i) => {
     const x = 0.3 + i * 3.18;
     card(s, x, 1.05, 3.04, 2.45);
-    txt(s, it[0], x + 0.2, 1.22, 2.64, 0.7, { fontFace: "Arial", fontSize: 34, bold: true, color: RED, valign: "middle" });
+    txt(s, it[0], x + 0.2, 1.22, 2.64, 0.7, { fontFace: KR, fontSize: 34, bold: true, color: RED, valign: "middle" });
     txt(s, it[1], x + 0.2, 1.95, 2.64, 0.35, { fontSize: 13.5, bold: true });
     txt(s, it[2], x + 0.2, 2.4, 2.64, 1.0, { fontSize: 12, color: MUTE });
   });
@@ -105,8 +116,8 @@ section(2, "데이터와 검증 설계", "정답이 없는 데이터에서 정�
   txt(s, "데이터 분리", 5.2, 1.15, 4.3, 0.3, { fontSize: 12.5, bold: true });
   s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 1.55, w: 0.64, h: 0.55, fill: { color: RED }, line: { color: RED, width: 0 } });
   s.addShape(pres.shapes.RECTANGLE, { x: 5.84, y: 1.55, w: 3.66, h: 0.55, fill: { color: "BDBDBD" }, line: { color: "BDBDBD", width: 0 } });
-  txt(s, "500", 5.2, 1.55, 0.64, 0.55, { fontFace: "Arial", fontSize: 12, bold: true, color: WHITE, align: "center", valign: "middle" });
-  txt(s, "2,852", 5.84, 1.55, 3.66, 0.55, { fontFace: "Arial", fontSize: 12, bold: true, color: INK, align: "center", valign: "middle" });
+  txt(s, "500", 5.2, 1.55, 0.64, 0.55, { fontFace: KR, fontSize: 12, bold: true, color: WHITE, align: "center", valign: "middle" });
+  txt(s, "2,852", 5.84, 1.55, 3.66, 0.55, { fontFace: KR, fontSize: 12, bold: true, color: INK, align: "center", valign: "middle" });
   txt(s, rich([["봉인 500장"], "  학습·규칙 도출에 쓰지 않음. 측정 전용"]), 5.2, 2.2, 4.3, 0.3, { fontSize: 11 });
   txt(s, rich([["판정용 2,852장"], "  모든 채택·기각 판정"], { }), 5.2, 2.5, 4.3, 0.3, { fontSize: 11 });
   txt(s, "채택 기준", 5.2, 2.95, 4.3, 0.3, { fontSize: 12.5, bold: true });
@@ -129,7 +140,7 @@ section(3, "아키텍처 설계", "왜 이 구조인가").addNotes("세 번째, 
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.1, w: 1.4, h: 1.15, rectRadius: 0.06, fill: { color: dl ? RED : "3A3A3A" }, line: { color: dl ? RED : "3A3A3A", width: 0 } });
     txt(s, st[0], x, 1.17, 1.4, 0.32, { fontSize: 12, bold: true, color: WHITE, align: "center", valign: "middle" });
     txt(s, st[1], x + 0.05, 1.5, 1.3, 0.7, { fontSize: 9.5, color: WHITE, align: "center", valign: "middle" });
-    if (i < steps.length - 1) txt(s, "▶", x + 1.4, 1.5, 0.2, 0.3, { fontFace: "Arial", fontSize: 10, color: MUTE, align: "center", valign: "middle" });
+    if (i < steps.length - 1) txt(s, "▶", x + 1.4, 1.5, 0.2, 0.3, { fontFace: KR, fontSize: 10, color: MUTE, align: "center", valign: "middle" });
   });
   txt(s, rich([["■ "], "사전학습 딥러닝 모델      "], {}), 0.3, 2.32, 3, 0.25, { fontSize: 9.5, color: MUTE });
   txt(s, "■ 규칙·재인식 단계", 2.2, 2.32, 3, 0.25, { fontSize: 9.5, color: MUTE });
@@ -153,7 +164,7 @@ section(3, "아키텍처 설계", "왜 이 구조인가").addNotes("세 번째, 
   st.forEach((r, i) => {
     const x = 0.3 + i * 2.38;
     card(s, x, 1.42, 2.26, 2.1);
-    txt(s, r[0], x + 0.15, 1.5, 1.96, 0.62, { fontFace: "Arial", fontSize: 32, bold: true, color: RED, valign: "middle" });
+    txt(s, r[0], x + 0.15, 1.5, 1.96, 0.62, { fontFace: KR, fontSize: 32, bold: true, color: RED, valign: "middle" });
     txt(s, r[1], x + 0.15, 2.12, 1.96, 0.3, { fontSize: 13, bold: true });
     txt(s, r[2], x + 0.15, 2.42, 1.96, 0.45, { fontSize: 10.5, color: MUTE });
     txt(s, r[3], x + 0.15, 2.9, 1.96, 0.55, { fontSize: 10.5, bold: true, color: INK });
@@ -172,7 +183,7 @@ section(3, "아키텍처 설계", "왜 이 구조인가").addNotes("세 번째, 
             ["품목보고번호 · 바코드", "20130628332176", "9자리 이상 숫자열은 통째로 제거", "앞 8자리가 완전한 날짜 형식"],
             ["영양성분표 · 중량", "78 7 5 31 / 30.4 GRAMS", "신뢰 등급 : 완전 날짜 > 공백·압축 > 연월 > 월일", "잡음이 이긴 오답 15장에서 도출"],
             ["제조일자 · 유통기한", "25.06.26  /  26.06.25", "가장 좋은 등급 안에서 가장 늦은 날짜", "소비기한 ≥ 유통기한 ≥ 제조일"],
-            ["시각 · 로트번호", "13:11  /  A03  /  L8", "날짜 패턴에서 제외, 옆 글자는 일(日)로 읽지 않음", "도트 인쇄 제품에 흔함"],
+            ["시각 · 로트번호", "13:11  /  A03  /  L8", "날짜 패턴에서 제외, 옆 글자를 '일' 자리로 읽지 않음", "도트 인쇄 제품에 흔함"],
             ["연·월·일 순서", "30.07.26  /  24/12/21", "년월일 우선. 무효·2028년 이후면 일월년", "라벨 : 년월일 344 · 일월년 102"],
             ["범위 밖 연도", "2033, 2009", "2017 ~ 2031 만 인정", "전수 라벨 최소 2017"]],
         0.3, 1.0, 9.4, [1.7, 1.9, 3.55, 2.25], { fontSize: 9.6, rowH: 0.36 });
@@ -196,13 +207,13 @@ section(4, "성능과 속도 검증", "무엇을 채택하고 무엇을 버렸�
   const vals = [39.1, 44.4, 60.9, 71.2, 73.6, 77.0, 78.4, 81.8, 83.2, 84.2, 86.2];
   s.addChart(pres.charts.BAR, [{ name: "완전일치(%)", labels, values: vals }], {
     x: 0.3, y: 0.95, w: 6.1, h: 3.45, barDir: "col", chartColors: ["B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "5A5A5A", RED],
-    showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 9, dataLabelColor: INK, dataLabelFontFace: "Arial", dataLabelFormatCode: "0.0",
+    showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 9, dataLabelColor: INK, dataLabelFontFace: KR, dataLabelFormatCode: "0.0",
     catAxisLabelFontSize: 8, catAxisLabelFontFace: KR, catAxisLabelColor: MUTE, catAxisLabelRotate: 315, valAxisLabelFontSize: 8, valAxisLabelColor: MUTE, valAxisMinVal: 30, valAxisMaxVal: 95,
     valGridLine: { color: "E3E3E3", size: 0.5 }, catGridLine: { style: "none" }, showLegend: false, showTitle: false });
   txt(s, "※ 앞 세 단계는 개발용 133장, 이후는 500장 기준", 0.4, 4.45, 6, 0.22, { fontSize: 8.5, color: MUTE });
   card(s, 6.6, 0.95, 3.1, 1.45);
   txt(s, "봉인 500장 · 완전일치", 6.78, 1.02, 2.8, 0.26, { fontSize: 10.5, color: MUTE });
-  txt(s, "86.2%", 6.78, 1.26, 2.8, 0.62, { fontFace: "Arial", fontSize: 34, bold: true, color: RED, valign: "middle" });
+  txt(s, "86.2%", 6.78, 1.26, 2.8, 0.62, { fontFace: KR, fontSize: 34, bold: true, color: RED, valign: "middle" });
   txt(s, "예선 제출본 84.2% → +2.0%p", 6.78, 1.9, 2.8, 0.4, { fontSize: 10.5 });
   table(s, [["구분", "정확도"], ["필드 평균 (채점 방식)", { text: "90.8%", bold: true, red: true }], ["작은 사진 (≤700px)", "83.7%"], ["중간", "89.5%"], ["큰 사진", "86.7%"], ["두 날짜 병기", "78.4%"], ["미인식률", "3.0%"]],
         6.6, 2.52, 3.1, [2.0, 1.1], { fontSize: 10, rowH: 0.29 });
@@ -284,7 +295,7 @@ section(5, "도메인 적용과 운영", "물류센터 입고 검수").addNotes(
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.5, w: 1.85, h: 1.2, rectRadius: 0.06, fill: { color: "3A3A3A" }, line: { color: "3A3A3A", width: 0 } });
     txt(s, r[0], x, 1.58, 1.85, 0.32, { fontSize: 13, bold: true, color: WHITE, align: "center", valign: "middle" });
     txt(s, r[1], x + 0.05, 1.92, 1.75, 0.7, { fontSize: 9.8, color: WHITE, align: "center", valign: "middle" });
-    txt(s, "▶", x + 1.85, 1.95, 0.2, 0.3, { fontFace: "Arial", fontSize: 10, color: MUTE, align: "center", valign: "middle" });
+    txt(s, "▶", x + 1.85, 1.95, 0.2, 0.3, { fontFace: KR, fontSize: 10, color: MUTE, align: "center", valign: "middle" });
   });
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.45, y: 1.3, w: 3.25, h: 0.72, rectRadius: 0.06, fill: { color: CARD }, line: { color: CARD, width: 0 } });
   txt(s, rich([["일치"], "  →  자동 통과 (약 80%)"]), 6.6, 1.3, 3.0, 0.72, { fontSize: 11.5, valign: "middle" });
@@ -335,7 +346,7 @@ section(5, "도메인 적용과 운영", "물류센터 입고 검수").addNotes(
   card(s, 0.3, 1.0, 4.6, 2.2);
   txt(s, "직접 촬영 166장 (도트·각인·병기만)", 0.45, 1.07, 4.3, 0.28, { fontSize: 12, bold: true });
   s.addChart(pres.charts.BAR, [{ name: "완전일치(%)", labels: ["배포 데이터 (봉인 500장)", "직접 촬영 (약점 유형)"], values: [86.2, 45.2] }], {
-    x: 0.4, y: 1.35, w: 4.4, h: 1.8, barDir: "bar", chartColors: ["5A5A5A", RED], showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 10, dataLabelFontFace: "Arial", dataLabelColor: INK, dataLabelFormatCode: "0.0",
+    x: 0.4, y: 1.35, w: 4.4, h: 1.8, barDir: "bar", chartColors: ["5A5A5A", RED], showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 10, dataLabelFontFace: KR, dataLabelColor: INK, dataLabelFormatCode: "0.0",
     catAxisLabelFontSize: 9.5, catAxisLabelFontFace: KR, catAxisLabelColor: INK, valAxisHidden: true, valAxisMinVal: 0, valAxisMaxVal: 100, valGridLine: { style: "none" }, catGridLine: { style: "none" }, showLegend: false, showTitle: false });
   card(s, 5.1, 1.0, 4.6, 2.2);
   txt(s, "남은 한계 세 가지", 5.25, 1.07, 4.3, 0.28, { fontSize: 12, bold: true });
@@ -381,7 +392,7 @@ section(5, "도메인 적용과 운영", "물류센터 입고 검수").addNotes(
   pts.forEach((p, i) => {
     const y = 1.7 + i * 1.05;
     s.addShape(pres.shapes.OVAL, { x: 0.95, y: y + 0.03, w: 0.5, h: 0.5, fill: { color: WHITE }, line: { color: WHITE, width: 0 } });
-    txt(s, String(i + 1), 0.95, y + 0.03, 0.5, 0.5, { fontFace: "Arial", fontSize: 16, bold: true, color: RED, align: "center", valign: "middle" });
+    txt(s, String(i + 1), 0.95, y + 0.03, 0.5, 0.5, { fontFace: KR, fontSize: 16, bold: true, color: RED, align: "center", valign: "middle" });
     txt(s, p[0], 1.65, y - 0.02, 7.6, 0.34, { fontSize: 16, bold: true, color: WHITE, valign: "middle" });
     txt(s, p[1], 1.65, y + 0.32, 7.6, 0.4, { fontSize: 11.5, color: WHITE });
   });
