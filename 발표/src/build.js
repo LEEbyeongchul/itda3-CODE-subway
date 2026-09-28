@@ -1,0 +1,436 @@
+// [CODE]_서브웨이 본선 발표 자료 — 참고 덱(진한 빨강 섹션 + 흰 본문, 왼쪽 빨간 표식 제목) 디자인
+const pptxgen = require("pptxgenjs");
+const path = require("path");
+const pres = new pptxgen();
+pres.layout = "LAYOUT_16x9"; // 10 x 5.625 in
+pres.title = "[CODE]_서브웨이 본선 발표";
+
+const RED = "8B0000", INK = "1A1A1A", MUTE = "6B6B6B", CARD = "F2F2F2", LINE = "BFBFBF", WHITE = "FFFFFF", PINK = "F6E3E3";
+const KR = "Pretendard SemiBold";
+// 글꼴 자체가 SemiBold 라 굵게(b) 속성을 또 주면 가짜 굵기가 덧씌워진다 → 모든 글자에서 bold 를 빼고 글꼴을 통일
+const noBold = (o) => { if (!o) return o; const c = Object.assign({}, o); delete c.bold; c.fontFace = KR; return c; };
+const fixRuns = (t) => Array.isArray(t) ? t.map((r) => Array.isArray(r) ? fixRuns(r) : (r && typeof r === "object" ? Object.assign({}, r, { options: noBold(r.options || {}) }) : r)) : t;
+const _addSlide = pres.addSlide.bind(pres);
+pres.addSlide = function () {
+  const s = _addSlide.apply(null, arguments);
+  const at = s.addText.bind(s), tb = s.addTable.bind(s);
+  s.addText = (t, o) => at(fixRuns(t), noBold(o));
+  s.addTable = (rows, o) => tb(fixRuns(rows), o);
+  return s;
+};
+const IMG = (n) => path.join(__dirname, "img", n);
+let pageNo = 0;
+
+function pageNum(s, dark) {
+  pageNo += 1;
+  s.addText(String(pageNo), { x: 9.3, y: 0.12, w: 0.5, h: 0.25, fontFace: KR, fontSize: 9, bold: true, color: dark ? WHITE : INK, align: "right", margin: 0, isTextBox: true });
+}
+function content(title, accent) {
+  const s = pres.addSlide(); s.background = { color: WHITE };
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.3, y: 0.3, w: 0.07, h: 0.4, fill: { color: RED }, line: { color: RED, width: 0 } });
+  const runs = [{ text: title, options: { color: INK } }];
+  if (accent) runs.push({ text: accent, options: { color: RED } });
+  s.addText(runs, { x: 0.45, y: 0.25, w: 8.7, h: 0.5, fontFace: KR, fontSize: 19, bold: true, margin: 0, valign: "middle", isTextBox: true });
+  s.addShape(pres.shapes.LINE, { x: 0.3, y: 0.82, w: 9.4, h: 0, line: { color: LINE, width: 0.75 } });
+  pageNum(s, false); return s;
+}
+function section(num, title, sub) {
+  const s = pres.addSlide(); s.background = { color: RED };
+  s.addText(String(num), { x: 5.2, y: 0.6, w: 4.8, h: 5.4, fontFace: KR, fontSize: 400, bold: true, color: WHITE, align: "right", valign: "middle", margin: 0, isTextBox: true });
+  s.addShape(pres.shapes.RECTANGLE, { x: 1.05, y: 3.05, w: 0.07, h: 0.5, fill: { color: WHITE }, line: { color: WHITE, width: 0 } });
+  s.addText(title, { x: 1.22, y: 2.98, w: 5, h: 0.65, fontFace: KR, fontSize: 28, bold: true, color: WHITE, margin: 0, valign: "middle", isTextBox: true });
+  if (sub) s.addText(sub, { x: 1.22, y: 3.68, w: 5.2, h: 0.4, fontFace: KR, fontSize: 12, color: WHITE, margin: 0, isTextBox: true });
+  pageNum(s, true); return s;
+}
+const card = (s, x, y, w, h, fill) => s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.08, fill: { color: fill || CARD }, line: { color: fill || CARD, width: 0 } });
+const txt = (s, t, x, y, w, h, o) => s.addText(t, Object.assign({ x, y, w, h, fontFace: KR, fontSize: 12, color: INK, margin: 0, valign: "top", isTextBox: true }, o || {}));
+// 빨간 강조가 섞인 한 줄: ["일반", ["강조"], "일반"]
+const rich = (parts, base) => parts.map((p) => Array.isArray(p) ? { text: p[0], options: Object.assign({ color: RED, bold: true }, base || {}) } : { text: p, options: Object.assign({}, base || {}) });
+function strip(s, parts, y, h) {
+  card(s, 0.3, y, 9.4, h || 0.42);
+  s.addText(rich(parts), { x: 0.45, y, w: 9.1, h: h || 0.42, fontFace: KR, fontSize: 12.5, bold: true, color: INK, align: "center", valign: "middle", margin: 0, isTextBox: true });
+}
+function badge(s, n, x, y) {
+  s.addShape(pres.shapes.OVAL, { x, y, w: 0.34, h: 0.34, fill: { color: RED }, line: { color: RED, width: 0 } });
+  s.addText(n, { x, y, w: 0.34, h: 0.34, fontFace: KR, fontSize: 10, bold: true, color: WHITE, align: "center", valign: "middle", margin: 0, isTextBox: true });
+}
+function table(s, rows, x, y, w, colW, o) {
+  o = o || {};
+  const data = rows.map((r, ri) => r.map((c) => {
+    const cell = typeof c === "string" ? { text: c } : c;
+    const head = ri === 0;
+    return { text: cell.text, options: Object.assign({ fontFace: KR, fontSize: o.fontSize || 10.5, color: head ? WHITE : INK, bold: head || !!cell.bold, fill: { color: head ? "3A3A3A" : (cell.hl ? PINK : WHITE) }, align: cell.align || "left", valign: "middle", margin: [3, 6, 3, 6] }, cell.red ? { color: RED, bold: true } : {}) };
+  }));
+  s.addTable(data, { x, y, w, colW, rowH: o.rowH || 0.3, border: { type: "solid", color: "9A9A9A", pt: 0.5 } });
+}
+
+// ───────────────────────── 1. 표지
+{
+  const s = pres.addSlide(); s.background = { color: RED };
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.7, y: 1.2, w: 0.08, h: 1.25, fill: { color: WHITE }, line: { color: WHITE, width: 0 } });
+  txt(s, "읽지 못하면, 읽지 못했다고 말하는 OCR", 0.95, 1.15, 8.6, 0.7, { fontSize: 30, bold: true, color: WHITE, valign: "middle" });
+  txt(s, "소비기한 추출 파이프라인과 중고거래 잔여기한 안내", 0.95, 1.88, 8.6, 0.55, { fontSize: 20, bold: true, color: WHITE, valign: "middle" });
+  txt(s, "4코어 CPU · GPU 없음 · 오프라인 환경에서의 경량 OCR 설계와 검증", 0.95, 2.7, 8.3, 0.35, { fontSize: 13, color: WHITE });
+  txt(s, "제3회 ITDA 연합학술제 본선  |  [CODE]_서브웨이", 0.95, 4.35, 8.3, 0.3, { fontSize: 12, color: WHITE });
+  txt(s, "민섭 · 서현 · 병철 · 승아 · 서영", 0.95, 4.68, 8.3, 0.3, { fontSize: 12, color: WHITE });
+  pageNum(s, true);
+  s.addNotes("안녕하세요, CODE 서브웨이 팀입니다. 저희는 상품 뒷면 사진에서 소비기한을 읽는 OCR을 만들었습니다. 오늘 드릴 말씀의 핵심은 제목 그대로입니다. 저희 시스템은 잘 읽는 것만큼, 못 읽었을 때 못 읽었다고 말하는 것을 중요하게 설계했습니다. 왜 그렇게 했는지, 그리고 그 설계가 중고거래 서비스에서 어떤 의미인지 10분 동안 말씀드리겠습니다.");
+}
+
+// ───────────────────────── 2. 섹션 1
+section(1, "문제 정의", "무엇을, 어떤 제약 아래에서 풀었는가").addNotes("먼저 문제와 제약입니다.");
+
+// 3. 제약이 설계를 정했다
+{
+  const s = content("출발점 : ", "제약이 설계를 결정했다");
+  const items = [["3,352장", "정답 라벨 없음", "상품 뒷면 사진만 제공. 정확도를 잴 기준부터 직접 만들어야 했다"],
+                 ["4코어 CPU", "GPU 없음 · 오프라인", "채점 서버 Ubuntu 22.04, RAM 8GB. 무거운 모델·외부 API 사용 불가"],
+                 ["2,500초", "500장 제한 시간", "초과하면 결과 파일이 나오지 않아 정확도까지 0점. 장당 5초가 상한"]];
+  items.forEach((it, i) => {
+    const x = 0.3 + i * 3.18;
+    card(s, x, 1.05, 3.04, 2.45);
+    txt(s, it[0], x + 0.2, 1.22, 2.64, 0.7, { fontFace: KR, fontSize: 34, bold: true, color: RED, valign: "middle" });
+    txt(s, it[1], x + 0.2, 1.95, 2.64, 0.35, { fontSize: 13.5, bold: true });
+    txt(s, it[2], x + 0.2, 2.4, 2.64, 1.0, { fontSize: 12, color: MUTE });
+  });
+  txt(s, rich(["첫 파이프라인(EasyOCR)은 4코어에서 ", ["장당 5.8초, 500장 2,905초"], " 로 한도를 넘겼다"]), 0.3, 3.85, 9.4, 0.3, { fontSize: 12.5, align: "center" });
+  txt(s, rich(["정확도를 올리기 전에 ", ["\"끝까지 돌아가는가\""], " 부터 풀어야 하는 문제였다"]), 0.3, 4.2, 9.4, 0.3, { fontSize: 12.5, align: "center" });
+  strip(s, ["그래서 모든 설계 결정에 ", ["정확도와 시간을 함께"], " 기록했다"], 4.75);
+  s.addNotes("이 대회는 세 가지 제약이 있었습니다. 첫째, 사진 3,352장에 정답이 없습니다. 둘째, 채점 서버는 GPU 없는 4코어 CPU이고 인터넷이 끊겨 있습니다. 셋째, 500장을 2,500초 안에 끝내야 하고, 넘기면 결과 파일 자체가 안 나와 정확도까지 0점입니다. 처음 만든 파이프라인은 500장에 2,905초가 걸려 이미 탈락이었습니다. 그래서 정확도보다 먼저, 끝까지 돌아가는 구조에서 출발했습니다.");
+}
+
+// ───────────────────────── 4. 섹션 2
+section(2, "데이터와 검증 설계", "정답이 없는 데이터에서 정확도를 재는 법").addNotes("두 번째는 검증 설계입니다. 심사에서 가장 먼저 확인하실 부분이라고 생각합니다.");
+
+// 5. 라벨링·측정 프로토콜
+{
+  const s = content("검증 설계 : ", "규칙을 먼저 정하고, 시험지를 봉인했다");
+  badge(s, "01", 0.3, 1.05); txt(s, "해석 규칙을 먼저 문서로 확정", 0.72, 1.05, 4.0, 0.34, { fontSize: 13, bold: true, valign: "middle" });
+  txt(s, "라벨러는 포장에 찍힌 그대로만 입력. 해석(연·월·일 순서, 2자리 연도)은 도구가 규칙으로 처리 → 라벨과 모델이 같은 규칙을 쓴다", 0.72, 1.4, 4.0, 0.8, { fontSize: 11, color: MUTE });
+  badge(s, "02", 0.3, 2.3); txt(s, "3,352장 전수 직접 라벨링", 0.72, 2.3, 4.0, 0.34, { fontSize: 13, bold: true, valign: "middle" });
+  txt(s, "5명 분담, 자체 제작 라벨링 도구. 오답 530장을 사람이 다시 보고 라벨 오류 23장 수정", 0.72, 2.65, 4.0, 0.7, { fontSize: 11, color: MUTE });
+  badge(s, "03", 0.3, 3.45); txt(s, "약점 유형만 골라 추가 촬영", 0.72, 3.45, 4.0, 0.34, { fontSize: 13, bold: true, valign: "middle" });
+  txt(s, "도트 인쇄·각인·두 날짜 병기 위주 489장 촬영, 389장 라벨링. 한 번도 본 적 없는 시험지로 사용", 0.72, 3.8, 4.0, 0.7, { fontSize: 11, color: MUTE });
+
+  card(s, 5.0, 1.05, 4.7, 3.5);
+  txt(s, "데이터 분리", 5.2, 1.15, 4.3, 0.3, { fontSize: 12.5, bold: true });
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.2, y: 1.55, w: 0.64, h: 0.55, fill: { color: RED }, line: { color: RED, width: 0 } });
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.84, y: 1.55, w: 3.66, h: 0.55, fill: { color: "BDBDBD" }, line: { color: "BDBDBD", width: 0 } });
+  txt(s, "500", 5.2, 1.55, 0.64, 0.55, { fontFace: KR, fontSize: 12, bold: true, color: WHITE, align: "center", valign: "middle" });
+  txt(s, "2,852", 5.84, 1.55, 3.66, 0.55, { fontFace: KR, fontSize: 12, bold: true, color: INK, align: "center", valign: "middle" });
+  txt(s, rich([["봉인 500장"], "  학습·규칙 도출에 쓰지 않음. 측정 전용"]), 5.2, 2.2, 4.3, 0.3, { fontSize: 11 });
+  txt(s, rich([["판정용 2,852장"], "  모든 채택·기각 판정"], { }), 5.2, 2.5, 4.3, 0.3, { fontSize: 11 });
+  txt(s, "채택 기준", 5.2, 2.95, 4.3, 0.3, { fontSize: 12.5, bold: true });
+  txt(s, [{ text: "새로 맞힌 장(회복)과 새로 틀린 장(퇴보)을 따로 센다", options: { bullet: true, breakLine: true } },
+          { text: "퇴보가 회복의 1/3 을 넘으면 점수가 올라도 기각", options: { bullet: true, breakLine: true } },
+          { text: "±1%p 는 잡음으로 보고 근거로 쓰지 않는다", options: { bullet: true } }], 5.2, 3.27, 4.3, 1.15, { fontSize: 11, paraSpaceAfter: 3 });
+  strip(s, ["정답 라벨도 검증 대상 : 고친 라벨 23장 중 ", ["16장은 모델이 맞은 쪽"], " 이었다"], 4.75);
+  s.addNotes("정답이 없으니 자부터 만들었습니다. 먼저 날짜를 어떻게 해석할지 규칙을 문서로 정하고, 그 규칙대로 동작하는 라벨링 도구를 만들어 3,352장 전부에 다섯 명이 직접 라벨을 달았습니다. 그중 500장은 따로 봉인해서 학습과 규칙 도출에 쓰지 않고 측정에만 썼고, 오늘 말씀드리는 공식 수치는 전부 이 500장 기준입니다. 기능을 넣을지는 나머지 2,852장에서 판정했고, 새로 맞힌 장과 새로 틀린 장을 따로 세어 퇴보가 크면 점수가 올라도 버렸습니다. 정답 라벨도 의심했습니다. 오답을 다시 보니 라벨이 틀린 게 23장, 그중 16장은 모델이 맞은 경우였습니다.");
+}
+
+// ───────────────────────── 6. 섹션 3
+section(3, "아키텍처 설계", "왜 이 구조인가").addNotes("세 번째, 아키텍처입니다.");
+
+// 7. 파이프라인 구조도
+{
+  const s = content("전체 파이프라인 : ", "쉬운 사진은 한 번에, 어려운 사진에만 비용을");
+  const steps = [["입력", "EXIF 보정\n640px 축소"], ["① 탐지", "PP-OCRv5 det\n5MB · 장당 1회"], ["② 인식", "PP-OCRv5 rec\n큰 글자부터"], ["③ 다시 읽기", "후보 줄만 원본으로\n3표 다수결"], ["④ 규칙 해석", "형식 정규화\n잡음 제거 · 선택"], ["출력", "YYYY-MM-DD\n또는 NONE"]];
+  steps.forEach((st, i) => {
+    const x = 0.3 + i * 1.6, dl = i === 1 || i === 2;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.1, w: 1.4, h: 1.15, rectRadius: 0.06, fill: { color: dl ? RED : "3A3A3A" }, line: { color: dl ? RED : "3A3A3A", width: 0 } });
+    txt(s, st[0], x, 1.17, 1.4, 0.32, { fontSize: 12, bold: true, color: WHITE, align: "center", valign: "middle" });
+    txt(s, st[1], x + 0.05, 1.5, 1.3, 0.7, { fontSize: 9.5, color: WHITE, align: "center", valign: "middle" });
+    if (i < steps.length - 1) txt(s, "▶", x + 1.4, 1.5, 0.2, 0.3, { fontFace: KR, fontSize: 10, color: MUTE, align: "center", valign: "middle" });
+  });
+  txt(s, rich([["■ "], "사전학습 딥러닝 모델      "], {}), 0.3, 2.32, 3, 0.25, { fontSize: 9.5, color: MUTE });
+  txt(s, "■ 규칙·재인식 단계", 2.2, 2.32, 3, 0.25, { fontSize: 9.5, color: MUTE });
+
+  txt(s, "조건이 맞을 때만 동작하는 단계", 0.3, 2.7, 9.4, 0.3, { fontSize: 12.5, bold: true });
+  table(s, [["장치", "발동 조건", "동작", "효과"],
+            ["이웃 줄 재탐지", "후보 줄 옆에 크기 비슷한 숫자 줄", "그 주변만 원본 해상도로 다시 탐지", "병기 +5 / −1"],
+            ["도트 인쇄 폴백", "후보 없음", "점을 이어 붙이는 전처리 후 재시도", "+17 / −0"],
+            ["파인튜닝 인식기", "그래도 후보 없음", "우리 라벨로 학습한 인식기로 재시도", "+7 / −0"],
+            ["시간 예산 가드", "예상 소요 2,000초 초과", "폴백 생략 → 2패스 생략 → NONE", "완주 보장"]],
+        0.3, 3.0, 9.4, [1.7, 2.9, 3.4, 1.4], { fontSize: 10, rowH: 0.29 });
+  strip(s, ["딥러닝은 ", ["\"읽기\""], " 만, 소비기한을 고르는 판단은 ", ["설명 가능한 규칙"], " 이 맡는다"], 4.75);
+  s.addNotes("구조는 단순합니다. 사진을 640픽셀로 줄여서 글자 위치를 찾고, 큰 글자부터 읽습니다. 날짜로 보이는 줄만 원본 해상도로 다시 읽어서 첫 결과와 다수결합니다. 그다음 규칙이 형식을 해석하고 소비기한을 고릅니다. 빨간 상자 두 개만 딥러닝 모델이고 나머지는 규칙입니다. 중요한 건 아래 표입니다. 비용이 큰 단계는 전부 조건부입니다. 대부분의 사진은 위 한 줄로 끝나고, 어려운 사진에서만 재탐지, 도트 폴백, 파인튜닝 인식기가 차례로 동작합니다.");
+}
+
+// 8. 오답 단계 진단
+{
+  const s = content("설계 사고 : ", "오답을 \"정답이 사라진 단계\" 로 진단했다");
+  txt(s, rich(["예선 구성의 오답 ", ["603장"], " (3,352장 전체 기준) 마다, 정답 날짜가 파이프라인 어느 단계까지 살아 있었는지 추적"]), 0.3, 0.98, 9.4, 0.3, { fontSize: 12 });
+  const st = [["183", "못 읽음", "탐지 실패 · 전부 미인식", "원본 재탐지\n작은 사진 확대"], ["290", "잘못 읽음", "인식기가 숫자를 오독", "후처리 규칙 보강\n파인튜닝 폴백"], ["111", "읽었다가 지움", "다시 읽기가 정답을 덮어씀", "\"교정만, 삭제 금지\"\n유지 규칙"], ["19", "잘못 고름", "가짜 후보가 늦은 날짜로 승리", "이중 해석 억제"]];
+  st.forEach((r, i) => {
+    const x = 0.3 + i * 2.38;
+    card(s, x, 1.42, 2.26, 2.1);
+    txt(s, r[0], x + 0.15, 1.5, 1.96, 0.62, { fontFace: KR, fontSize: 32, bold: true, color: RED, valign: "middle" });
+    txt(s, r[1], x + 0.15, 2.12, 1.96, 0.3, { fontSize: 13, bold: true });
+    txt(s, r[2], x + 0.15, 2.42, 1.96, 0.45, { fontSize: 10.5, color: MUTE });
+    txt(s, r[3], x + 0.15, 2.9, 1.96, 0.55, { fontSize: 10.5, bold: true, color: INK });
+  });
+  txt(s, "단계마다 처방이 다르다", 0.3, 3.68, 9.4, 0.3, { fontSize: 12.5, bold: true });
+  txt(s, [{ text: "\"읽었다가 지움\" 111장은 모델이 아니라 코드 로직의 문제 → 규칙 하나로 판정용 2,852장 +45 / −4", options: { bullet: true, breakLine: true } },
+          { text: "\"못 읽음\" 은 해상도를 올려도 회복되지 않았다 (5가지 구성 전부 ±1%p, 시간만 +30~50%) → 원인은 탐지가 아니라 인식 품질", options: { bullet: true } }], 0.3, 3.98, 9.4, 0.7, { fontSize: 11, paraSpaceAfter: 3 });
+  strip(s, ["오답을 뭉뚱그려 \"모델을 키우자\" 가 아니라, ", ["원인별로 가장 싼 처방"], " 을 골랐다"], 4.75);
+  s.addNotes("본선에서 가장 먼저 한 일은 오답 진단입니다. 오답 603장마다 정답 날짜가 어느 단계까지 살아 있었는지를 추적했더니 네 가지로 갈렸습니다. 못 읽은 것 183장, 잘못 읽은 것 290장, 그리고 흥미로운 게 세 번째입니다. 처음엔 맞게 읽었는데 다시 읽기 단계가 그 정답을 지워 버린 게 111장이었습니다. 이건 모델 문제가 아니라 저희 코드의 문제였고, 다시 읽기는 교정만 하고 삭제는 못 하게 규칙 하나를 바꿔서 45장을 되찾았습니다. 이렇게 원인을 나눠 놓으니, 모델을 키우는 대신 원인마다 가장 싼 처방을 고를 수 있었습니다.");
+}
+
+// 9. 후처리: 소비기한 vs 다른 숫자
+{
+  const s = content("후처리 규칙 : ", "소비기한을 다른 숫자와 구분하는 법");
+  table(s, [["구분 대상", "실제 예", "규칙", "근거"],
+            ["품목보고번호 · 바코드", "20130628332176", "9자리 이상 숫자열은 통째로 제거", "앞 8자리가 완전한 날짜 형식"],
+            ["영양성분표 · 중량", "78 7 5 31 / 30.4 GRAMS", "신뢰 등급 : 완전 날짜 > 공백·압축 > 연월 > 월일", "잡음이 이긴 오답 15장에서 도출"],
+            ["제조일자 · 유통기한", "25.06.26  /  26.06.25", "가장 좋은 등급 안에서 가장 늦은 날짜", "소비기한 ≥ 유통기한 ≥ 제조일"],
+            ["시각 · 로트번호", "13:11  /  A03  /  L8", "날짜 패턴에서 제외, 옆 글자를 '일' 자리로 읽지 않음", "도트 인쇄 제품에 흔함"],
+            ["연·월·일 순서", "30.07.26  /  24/12/21", "년월일 우선. 무효·2028년 이후면 일월년", "라벨 : 년월일 344 · 일월년 102"],
+            ["범위 밖 연도", "2033, 2009", "2017 ~ 2031 만 인정", "전수 라벨 최소 2017"]],
+        0.3, 1.0, 9.4, [1.7, 1.9, 3.55, 2.25], { fontSize: 9.6, rowH: 0.36 });
+  card(s, 0.3, 3.7, 4.6, 0.9);
+  txt(s, "미인식(NONE) 기준", 0.45, 3.76, 4.3, 0.28, { fontSize: 12, bold: true });
+  txt(s, "후보가 하나도 없으면 추측하지 않는다. 연도나 일만 없으면 그 칸만 NONE (NONE-10-14, 2027-07-NONE)", 0.45, 4.04, 4.3, 0.52, { fontSize: 10.5, color: MUTE });
+  card(s, 5.1, 3.7, 4.6, 0.9);
+  txt(s, "라벨과 모델이 같은 규칙", 5.25, 3.76, 4.3, 0.28, { fontSize: 12, bold: true });
+  txt(s, "운영진 확정 : 모호한 표기는 팀이 문서화한 규칙으로 채점. 규칙 문서 하나를 라벨링 도구와 파서가 공유", 5.25, 4.04, 4.3, 0.52, { fontSize: 10.5, color: MUTE });
+  strip(s, ["규칙마다 ", ["어떤 오답에서 나왔는지"], " 와 ", ["회복·퇴보 수"], " 가 기록돼 있다"], 4.75);
+  s.addNotes("소비기한을 다른 숫자와 어떻게 구분하는가입니다. 품목보고번호는 앞 여덟 자리가 완전한 날짜 형식이라, 아홉 자리 이상 숫자열은 통째로 지웁니다. 영양성분표 숫자는 신뢰 등급으로 거릅니다. 구분자가 있는 완전한 날짜가 항상 이깁니다. 제조일자와 소비기한이 같이 있으면 가장 늦은 날짜를 고르고, 연월일 순서가 모호하면 직접 단 라벨의 통계로 정한 기본값을 씁니다. 후보가 없으면 추측하지 않고 NONE을 냅니다. 규칙마다 어떤 오답에서 나왔고 몇 장을 얻고 잃었는지가 기록돼 있습니다.");
+}
+
+// ───────────────────────── 10. 섹션 4
+section(4, "성능과 속도 검증", "무엇을 채택하고 무엇을 버렸는가").addNotes("네 번째, 결과입니다.");
+
+// 11. 성능 이력 (차트)
+{
+  const s = content("정확도 : ", "봉인 500장 86.2%, 필드 평균 90.8%");
+  const labels = ["EasyOCR", "규칙 5개", "인식기 교체", "탐지기 교체", "신뢰 등급", "도트 폴백", "2패스 다수결", "규칙 v5·v6", "파인튜닝 폴백", "예선 제출", "본선 통합"];
+  const vals = [39.1, 44.4, 60.9, 71.2, 73.6, 77.0, 78.4, 81.8, 83.2, 84.2, 86.2];
+  s.addChart(pres.charts.BAR, [{ name: "완전일치(%)", labels, values: vals }], {
+    x: 0.3, y: 0.95, w: 6.1, h: 3.45, barDir: "col", chartColors: ["B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "B9B9B9", "5A5A5A", RED],
+    showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 9, dataLabelColor: INK, dataLabelFontFace: KR, dataLabelFormatCode: "0.0",
+    catAxisLabelFontSize: 8, catAxisLabelFontFace: KR, catAxisLabelColor: MUTE, catAxisLabelRotate: 315, valAxisLabelFontSize: 8, valAxisLabelColor: MUTE, valAxisMinVal: 30, valAxisMaxVal: 95,
+    valGridLine: { color: "E3E3E3", size: 0.5 }, catGridLine: { style: "none" }, showLegend: false, showTitle: false });
+  txt(s, "※ 앞 세 단계는 개발용 133장, 이후는 500장 기준", 0.4, 4.45, 6, 0.22, { fontSize: 8.5, color: MUTE });
+  card(s, 6.6, 0.95, 3.1, 1.45);
+  txt(s, "봉인 500장 · 완전일치", 6.78, 1.02, 2.8, 0.26, { fontSize: 10.5, color: MUTE });
+  txt(s, "86.2%", 6.78, 1.26, 2.8, 0.62, { fontFace: KR, fontSize: 34, bold: true, color: RED, valign: "middle" });
+  txt(s, "예선 제출본 84.2% → +2.0%p", 6.78, 1.9, 2.8, 0.4, { fontSize: 10.5 });
+  table(s, [["구분", "정확도"], ["필드 평균 (채점 방식)", { text: "90.8%", bold: true, red: true }], ["작은 사진 (≤700px)", "83.7%"], ["중간", "89.5%"], ["큰 사진", "86.7%"], ["두 날짜 병기", "78.4%"], ["미인식률", "3.0%"]],
+        6.6, 2.52, 3.1, [2.0, 1.1], { fontSize: 10, rowH: 0.29 });
+  strip(s, ["판정용 2,852장에서도 ", ["82.3 → 86.7%"], " : 튜닝에 쓴 셋과 봉인 셋이 함께 올랐다"], 4.75);
+  s.addNotes("결과입니다. 처음 39%에서 출발해서 예선 제출 때 84.2%, 본선 통합본은 봉인 500장에서 86.2%입니다. 연월일을 따로 채점하는 필드 평균으로는 90.8%입니다. 가장 큰 도약은 탐지기와 인식기를 교체한 구간인데, 속도 때문에 한 결정이 정확도까지 올린 경우입니다. 튜닝에 쓴 2,852장에서는 82.3에서 86.7로 올랐고, 한 번도 보지 않은 봉인 셋에서도 같이 올랐기 때문에 튜닝 셋에 과적합된 상승이 아니라고 판단합니다.");
+}
+
+// 12. 채택/기각
+{
+  const s = content("모델·대안 비교 : ", "점수가 올라도 기각한 것들");
+  table(s, [["시도", "결과 (회복 / 퇴보)", "판단", "이유"],
+            ["탐지·인식기 PP-OCRv5 mobile 로 교체", "39.1 → 67.7%, 5.8 → 1.8초", { text: "채택", bold: true, red: true }, "속도 한도와 정확도를 동시에 해결"],
+            ["2패스 \"교정만, 삭제 금지\"", "+45 / −4", { text: "채택", bold: true, red: true }, "코드 로직 결함 수정"],
+            ["본선 규칙 합계 (위 포함 7개)", "+102 / −7", { text: "채택", bold: true, red: true }, "병기 64 → 78%"],
+            ["이웃 줄 원본 재탐지", "병기 +5 / −1, 그 외 0 / 0", { text: "채택", bold: true, red: true }, "게이트로 비용을 병기에만"],
+            ["파인튜닝 인식기를 1순위로", "+86 / −64 (+0.8%p)", "기각", "맞던 답을 흔든다 → 폴백으로만 사용"],
+            ["합성 도트 데이터 3,000장 학습", "76.8% (정밀도 84 → 81%)", "기각", "진짜 글씨를 대충 읽게 됨"],
+            ["탐지 해상도 상향 (5구성)", "±1%p, 시간 +30~50%", "기각", "원인이 해상도가 아님"],
+            ["한국어 인식기 2차 의견", "+14 / −1 → 최신 규칙 위 +7 / −2", "기본 끔", "5장보다 시간 여유 (장당 +0.3~0.7초)"],
+            ["회전 · 탐지 임계 완화 재시도", "회복 0, 엉뚱한 값 6", "기각", "미인식을 오답으로 바꿀 뿐"]],
+        0.3, 1.0, 9.4, [3.0, 2.4, 0.8, 3.2], { fontSize: 9.8, rowH: 0.345 });
+  strip(s, ["파인튜닝은 +0.8%p 였지만 ", ["퇴보 64장"], " 때문에 버렸다. 채택 기준이 점수보다 먼저다"], 4.75);
+  s.addNotes("저희가 시도한 것 중 절반은 버렸습니다. 대표적인 게 파인튜닝입니다. 저희 라벨로 인식기를 학습시켜서 1순위로 썼더니 정확도가 0.8퍼센트포인트 올랐습니다. 그런데 새로 맞힌 게 86장, 새로 틀린 게 64장이었습니다. 전체 점수는 올랐지만 잘 맞히던 사진 64장을 망가뜨린 겁니다. 그래서 기각했고, 기존 인식기가 못 읽은 사진에만 쓰는 방식으로 넣어 퇴보 없이 7장을 얻었습니다. 합성 데이터도, 해상도 상향도 같은 기준으로 버렸습니다.");
+}
+
+// 13. 속도
+{
+  const s = content("속도·효율 : ", "한도의 60%, 그리고 완주 보장");
+  const k = [["약 3초", "장당 처리 시간", "4코어 고정 측정"], ["1,500초", "500장 환산", "한도 2,500초의 60%"], ["1.25GB", "최대 메모리", "한도 8GB (40장 실측)"], ["0원", "학습 비용", "무료 Colab T4 만 사용"]];
+  k.forEach((r, i) => {
+    const x = 0.3 + i * 2.38;
+    card(s, x, 1.02, 2.26, 1.3);
+    txt(s, r[0], x + 0.15, 1.08, 1.96, 0.55, { fontFace: KR, fontSize: 24, bold: true, color: RED, valign: "middle" });
+    txt(s, r[1], x + 0.15, 1.63, 1.96, 0.28, { fontSize: 11.5, bold: true });
+    txt(s, r[2], x + 0.15, 1.9, 1.96, 0.3, { fontSize: 10, color: MUTE });
+  });
+  txt(s, "속도를 만든 결정", 0.3, 2.5, 4.6, 0.3, { fontSize: 12.5, bold: true });
+  txt(s, [{ text: "탐지는 640px 축소본에서 장당 1회 (탐지 비용 = 픽셀 수)", options: { bullet: true, breakLine: true } },
+          { text: "인식은 큰 글자부터, 날짜를 찾으면 잔글씨 생략", options: { bullet: true, breakLine: true } },
+          { text: "8개씩 배치 인식 (16개 498 → 321ms)", options: { bullet: true, breakLine: true } },
+          { text: "다시 읽기는 후보 줄 크롭만, 폴백은 후보 없는 장에만", options: { bullet: true } }], 0.3, 2.8, 4.6, 1.6, { fontSize: 10.8, paraSpaceAfter: 4 });
+  card(s, 5.1, 2.5, 4.6, 2.05);
+  txt(s, "시간 예산 가드 : 3단계 자동 경량화", 5.25, 2.57, 4.3, 0.3, { fontSize: 12, bold: true });
+  txt(s, "최근 20장 속도로 총 소요를 예측, 2,000초를 넘길 것 같으면", 5.25, 2.87, 4.3, 0.3, { fontSize: 10.5, color: MUTE });
+  [["1", "재시도 단계 생략"], ["2", "다시 읽기 생략"], ["3", "남은 장 NONE, 결과 파일은 반드시 생성"]].forEach((r, i) => {
+    badge(s, r[0], 5.25, 3.25 + i * 0.4); txt(s, r[1], 5.68, 3.25 + i * 0.4, 3.9, 0.34, { fontSize: 11, valign: "middle" });
+  });
+  strip(s, ["채점 서버 속도를 모르는 상황에서 ", ["\"느리면 0점\""], " 을 구조로 막았다"], 4.75);
+  s.addNotes("속도입니다. 채점 환경과 같은 4코어로 고정해서 쟀을 때 장당 약 3초, 500장에 1,500초로 한도의 60퍼센트입니다. 메모리는 1.25기가, 학습은 무료 코랩만 써서 비용이 0원입니다. 탐지는 줄인 사진에서 한 번만 하고, 인식은 큰 글자부터 읽다가 날짜를 찾으면 멈춥니다. 오른쪽이 시간 가드입니다. 채점 서버가 얼마나 빠른지 저희는 모릅니다. 그래서 속도를 지켜보다가 늦을 것 같으면 단계적으로 가벼워지고, 최악의 경우에도 결과 파일은 반드시 나오게 했습니다.");
+}
+
+// 14. 시연 캡처
+{
+  const s = content("실행 화면 : ", "실제 파이프라인 출력");
+  const demos = [["demo_plain.png", "일반 인쇄"], ["demo_two.png", "제조·소비 병기"], ["demo_dot.png", "도트 인쇄 (폴백)"], ["demo_none.png", "미인식 → 판매자 입력"]];
+  demos.forEach((d, i) => {
+    const x = 0.3 + i * 2.38;
+    s.addImage({ path: IMG(d[0]), x, y: 1.0, w: 2.26, h: 2.142 });
+    txt(s, d[1], x, 3.2, 2.26, 0.3, { fontSize: 11.5, bold: true, align: "center" });
+  });
+  card(s, 0.3, 3.62, 9.4, 1.0);
+  txt(s, [{ text: "빨간 상자 = 선택된 날짜 줄, 회색 상자 = 다른 후보. 아래 패널은 파이프라인이 실제로 낸 값·후보·처리 시간", options: { bullet: true, breakLine: true } },
+          { text: "병기 사진 : 25.06.26(제조)과 26.06.25(소비)를 모두 읽고 늦은 날짜를 선택", options: { bullet: true, breakLine: true } },
+          { text: "네 번째 : 후보가 없으면 날짜를 지어내지 않고 NONE. 게시 화면에서는 빈칸으로 두고 판매자가 입력한다", options: { bullet: true } }], 0.45, 3.68, 9.1, 0.9, { fontSize: 10.5, paraSpaceAfter: 3 });
+  strip(s, ["재현 : 새 환경에서 ", ["설치 → 가중치 다운로드 → Run All"], " 검증, Ubuntu·Python 3.10·오프라인 자동 테스트 통과"], 4.75);
+  s.addNotes("실제 실행 화면입니다. 두 번째가 제조일자와 소비기한이 같이 찍힌 경우입니다. 25년 6월 26일과 26년 6월 25일을 둘 다 읽고 늦은 쪽을 골랐습니다. 세 번째는 도트 인쇄인데, 처음엔 못 읽었다가 점을 이어 붙이는 전처리 후에 읽어 낸 경우입니다. 그리고 네 번째를 일부러 넣었습니다. 못 읽은 사진입니다. 저희 시스템은 여기서 날짜를 지어내지 않고 NONE을 냅니다. 이 선택이 다음에 말씀드릴 중고거래 적용의 핵심입니다.");
+}
+
+// ───────────────────────── 15. 섹션 5
+section(5, "도메인 적용과 운영", "중고거래 식품 게시글의 잔여기한").addNotes("마지막으로 서비스 적용입니다.");
+
+// 16. 도메인: 중고거래 잔여기한
+{
+  const s = content("적용 도메인 : ", "중고거래 식품, 잔여기한을 거래 정보로");
+  txt(s, rich(["명절 선물세트가 중고거래로 : 당근 추석 연휴 선물세트 거래량 ", ["+50%"], " (전년 대비). 그런데 소비기한은 판매자가 손으로 적는다"]), 0.3, 0.98, 9.4, 0.3, { fontSize: 11.5 });
+  const fl = [["촬영", "판매자가 앱 카메라로\n날짜면 촬영"], ["OCR", "서버 CPU, 장당 약 3초\n확신할 때만 날짜 채움"], ["확인", "날짜 확대본을 보며\n판매자가 확인·수정"]];
+  fl.forEach((r, i) => {
+    const x = 0.3 + i * 2.05;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.5, w: 1.85, h: 1.2, rectRadius: 0.06, fill: { color: "3A3A3A" }, line: { color: "3A3A3A", width: 0 } });
+    txt(s, r[0], x, 1.58, 1.85, 0.32, { fontSize: 13, bold: true, color: WHITE, align: "center", valign: "middle" });
+    txt(s, r[1], x + 0.05, 1.92, 1.75, 0.7, { fontSize: 9.8, color: WHITE, align: "center", valign: "middle" });
+    txt(s, "▶", x + 1.85, 1.95, 0.2, 0.3, { fontFace: KR, fontSize: 10, color: MUTE, align: "center", valign: "middle" });
+  });
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.45, y: 1.3, w: 3.25, h: 0.72, rectRadius: 0.06, fill: { color: CARD }, line: { color: CARD, width: 0 } });
+  txt(s, rich([["게시글"], "  소비기한 2027-03-14 · 167일 남음\n(판매자 사진 판독값 + 날짜 원본)"]), 6.6, 1.3, 3.0, 0.72, { fontSize: 10.3, valign: "middle" });
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.45, y: 2.12, w: 3.25, h: 0.72, rectRadius: 0.06, fill: { color: PINK }, line: { color: PINK, width: 0 } });
+  txt(s, rich([["기한 임박"], "  →  가격 인하·나눔 제안\n", ["기한 경과"], "  →  게시글 자동 숨김"]), 6.6, 2.12, 3.0, 0.72, { fontSize: 10.3, valign: "middle" });
+
+  card(s, 0.3, 3.05, 4.6, 1.55);
+  txt(s, "이 구조의 핵심", 0.45, 3.12, 4.3, 0.28, { fontSize: 12, bold: true });
+  txt(s, rich(["판매자가 마지막에 확인하므로, 모델이 틀려도 한 번 고치면 끝난다. 그래서 정확도는 ", ["안전성이 아니라 자동 입력 비율"], " 을 결정한다. 확신이 없으면 빈칸(NONE) 으로 두니 지금보다 나빠지지 않는다"]), 0.45, 3.42, 4.3, 1.15, { fontSize: 10.8 });
+  card(s, 5.1, 3.05, 4.6, 1.55);
+  txt(s, "속이는 판매자는?", 5.25, 3.12, 4.3, 0.28, { fontSize: 12, bold: true });
+  txt(s, [{ text: "사기 방지 장치가 아니다. 스티커 위조·다른 상품 촬영은 기존 사후 모니터링 몫", options: { bullet: true, breakLine: true } },
+          { text: "\"확인됨\" 대신 판독값과 날짜 원본을 보여 줘, 위조에 신뢰를 빌려주지 않는다", options: { bullet: true, breakLine: true } },
+          { text: "원본·촬영 시각·수정 이력은 신고 시 증거로 보존", options: { bullet: true } }], 5.25, 3.42, 4.3, 1.15, { fontSize: 10.5, paraSpaceAfter: 3 });
+  strip(s, ["당근은 이미 사진에서 인증마크를 OCR 로 찾는다. 우리는 같은 사진에서 ", ["소비기한을 찾아 날짜로 확정"], " 한다"], 4.75);
+  s.addNotes("적용 대상은 중고거래 플랫폼의 식품 게시글입니다. 이번 추석 연휴에 당근에서 선물세트 거래량이 작년보다 50퍼센트 늘었습니다. 소비기한은 판매자가 손으로 적고 아무도 확인하지 않습니다. 판매자가 날짜면을 찍으면 서버가 읽고, 확신할 때만 날짜 칸을 채웁니다. 판매자는 날짜 확대본을 보며 확인하거나 고칩니다. 게시글에는 판매자 사진에서 읽은 날짜와 남은 일수가 붙고, 기한이 임박하면 알림, 지나면 자동으로 숨겨집니다. 핵심은 판매자가 마지막에 확인한다는 점입니다. 모델이 틀려도 한 번 고치면 끝나고, 확신이 없으면 빈칸이니 지금보다 나빠지지 않습니다. 그래서 정확도는 안전성이 아니라 자동 입력 비율을 정합니다. 당근은 이미 인증마크를 OCR로 찾고 있습니다. 저희는 같은 사진에서 소비기한을 찾아 날짜로 확정합니다.");
+}
+
+// 17. 운영 구조·비용
+{
+  const s = content("운영 구조와 비용 : ", "이미 도는 OCR 옆에 CPU 한 대");
+  table(s, [["항목", "내용"],
+            ["1차 대상", "건강기능식품 카테고리 (소비기한 6개월 이상, 필수 기재)"],
+            ["규모", "월 약 2.4만 건 (20개월 게시글 48만 건, 식약처 자료)"],
+            ["처리", "게시할 때 1장, 장당 약 3초 → 하루 800장 ≈ CPU 40분"],
+            ["모델", "21MB, GPU 없음 · 서버 또는 폰 온디바이스"],
+            ["판정", "6개월 미만·기한 경과로 읽히면 재확인 요청 (자동 차단 안 함)"]],
+        0.3, 1.0, 5.6, [1.0, 4.6], { fontSize: 9.8, rowH: 0.34 });
+  card(s, 6.1, 1.0, 3.6, 2.05);
+  txt(s, "비용과 가치", 6.25, 1.07, 3.3, 0.28, { fontSize: 12, bold: true });
+  txt(s, [{ text: "비용 ≈ 0 : 라이선스 0원, GPU 0대, 서버 CPU 일부", options: { bullet: true, breakLine: true } },
+          { text: "가치 : 잔여기한 안내·검색, 입력 편의, 기한 경과 글 자동 숨김", options: { bullet: true, breakLine: true } },
+          { text: "인력 절감으로 부풀리지 않는다 : 소비기한 위반은 전체 위반의 5% (725 / 14,729건)", options: { bullet: true } }], 6.25, 1.37, 3.3, 1.62, { fontSize: 10.2, paraSpaceAfter: 3 });
+  txt(s, "자동 입력 기준 (판매자 폰 사진을 흉내 낸 직접 촬영 389장 실측)", 0.3, 3.2, 9.4, 0.3, { fontSize: 12.5, bold: true });
+  table(s, [["자동 입력 기준", "채워지는 비율", "채운 값의 정확도", "틀린 값을 받는 판매자"],
+            ["읽히면 무조건 채움", "70%", "70%", "21%"],
+            [{ text: "확신도 0.7 이상만", hl: true }, { text: "45%", hl: true }, { text: "77%", hl: true }, { text: "10%", hl: true, red: true }],
+            ["확신도 0.9 이상만", "17%", "88%", "2%"]],
+        0.3, 3.5, 9.4, [2.8, 2.2, 2.2, 2.2], { fontSize: 10, rowH: 0.29 });
+  strip(s, ["판매자가 고친 값이 ", ["공짜 라벨"], " 이 되어, 쓸수록 자동 입력 비율이 오른다"], 4.75);
+  s.addNotes("1차 대상은 규칙이 가장 명확한 건강기능식품 카테고리입니다. 식약처 자료로 게시글이 월 2만 4천 건입니다. 하루 800장을 장당 3초로 읽으면 CPU 40분이라 비용은 사실상 0입니다. 아래 표가 중요합니다. 직접 찍은 폰 사진 389장으로 쟀을 때, 무조건 채우면 21퍼센트의 판매자가 틀린 값을 받습니다. 확신도 0.7 이상일 때만 채우면 절반 가까이 자동으로 채워지고 틀린 값은 10퍼센트로 줄어듭니다. 가치를 인력 절감으로 부풀리지는 않았습니다. 소비기한 위반은 전체 위반의 5퍼센트뿐이기 때문입니다. 대신 판매자가 고친 값이 공짜 라벨이 되어, 쓸수록 자동 입력 비율이 올라갑니다.");
+}
+
+// 18. 한계
+{
+  const s = content("한계 : ", "판매자 폰 사진에서는 52%");
+  card(s, 0.3, 1.0, 4.6, 2.2);
+  txt(s, "직접 촬영 389장 (팀원 4명, 약점 유형 위주)", 0.45, 1.07, 4.3, 0.28, { fontSize: 12, bold: true });
+  s.addChart(pres.charts.BAR, [{ name: "완전일치(%)", labels: ["배포 데이터 (봉인 500장)", "직접 촬영 (새 사진 389장)"], values: [86.2, 52.4] }], {
+    x: 0.4, y: 1.35, w: 4.4, h: 1.8, barDir: "bar", chartColors: ["5A5A5A", RED], showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 10, dataLabelFontFace: KR, dataLabelColor: INK, dataLabelFormatCode: "0.0",
+    catAxisLabelFontSize: 9.5, catAxisLabelFontFace: KR, catAxisLabelColor: INK, valAxisHidden: true, valAxisMinVal: 0, valAxisMaxVal: 100, valGridLine: { style: "none" }, catGridLine: { style: "none" }, showLegend: false, showTitle: false });
+  card(s, 5.1, 1.0, 4.6, 2.2);
+  txt(s, "남은 한계 세 가지", 5.25, 1.07, 4.3, 0.28, { fontSize: 12, bold: true });
+  txt(s, [{ text: "남은 날을 많게 읽는 경우 4.9% (중앙 +63일) → 제품 유형별 최대 기한을 넘으면 판독 불가", options: { bullet: true, breakLine: true } },
+          { text: "스티커 위조·다른 상품 촬영은 못 막는다 → 사후 모니터링 몫", options: { bullet: true, breakLine: true } },
+          { text: "선물세트는 날짜가 여러 개 → 상품별로 찍고 가장 이른 날짜를 표시", options: { bullet: true } }], 5.25, 1.37, 4.3, 1.75, { fontSize: 10.5, paraSpaceAfter: 4 });
+  txt(s, "보완 계획", 0.3, 3.38, 9.4, 0.3, { fontSize: 12.5, bold: true });
+  [["01", "확신할 때만 채운다", "빈칸이면 지금처럼 손으로 입력. 손해가 없다"], ["02", "판매자 수정값으로 재학습", "고칠 때마다 라벨이 생겨 자동 입력 비율 상승"], ["03", "차단 대신 안내", "재확인만 요청하고 최종 판단은 기존 검토에"]].forEach((r, i) => {
+    const x = 0.3 + i * 3.18;
+    badge(s, r[0], x, 3.75); txt(s, r[1], x + 0.42, 3.72, 2.6, 0.3, { fontSize: 11.5, bold: true, valign: "middle" });
+    txt(s, r[2], x + 0.42, 4.02, 2.6, 0.6, { fontSize: 10, color: MUTE });
+  });
+  strip(s, ["새 사진은 찍은 사람에 따라 ", ["44 ~ 70%"], " : 촬영 안내(날짜를 가운데, 가까이)가 정확도를 좌우한다"], 4.75);
+  s.addNotes("한계입니다. 판매자가 폰으로 찍는 사진이 저희 약점입니다. 팀원 네 명이 편의점에서 389장을 직접 찍어 돌렸더니 52퍼센트였고, 찍은 사람에 따라 44에서 70퍼센트까지 갈렸습니다. 가장 위험한 건 남은 날을 많게 읽는 경우로 4.9퍼센트입니다. 그래서 읽은 날짜가 제품 유형별 최대 기한을 넘으면 판독 불가로 처리하고, 자동 차단 대신 재확인 요청으로 설계했습니다. 선물세트처럼 여러 상품이 든 경우는 상품별로 찍게 합니다.");
+}
+
+// 19. 확장
+{
+  const s = content("확장성 : ", "\"제품에 찍힌 기한\" 을 읽는 모든 곳");
+  table(s, [["적용 분야", "읽는 값", "바꿀 것", "그대로 쓰는 것"],
+            ["가공식품 · 명절 선물세트 카테고리", "소비기한", "대상 카테고리, 상품별 촬영", "파이프라인 전체"],
+            ["품목보고번호 인식 → 제품 조회·회수 확인", "품목보고번호", "9자리 숫자 마스킹 규칙 재설계", "탐지 · 인식 (정확도 미측정)"],
+            ["제조 현장 출하 전 날짜 인쇄 확인", "소비기한", "대조 대상 (공장의 기대값)", "파이프라인 전체"],
+            ["의약품 · 화학 제품 출하 표시물", "제조번호 · 사용기한", "표기 형식 규칙", "읽기 · 대조 · 예외 처리"]],
+        0.3, 1.0, 9.4, [3.1, 1.8, 2.4, 2.1], { fontSize: 10.1, rowH: 0.38 });
+  card(s, 0.3, 3.15, 9.4, 1.45);
+  txt(s, "왜 옮겨 쓸 수 있는가", 0.45, 3.22, 9.1, 0.28, { fontSize: 12, bold: true });
+  txt(s, [{ text: "딥러닝 모델은 \"글자를 읽는 일\" 만 하고, 도메인 지식은 전부 규칙 문서 한 장에 있다", options: { bullet: true, breakLine: true } },
+          { text: "읽기 → 기준값과 대조 → 예외만 사람에게 : 이 세 단계는 분야가 바뀌어도 같다", options: { bullet: true, breakLine: true } },
+          { text: "사람(판매자·검수자)이 확정한 값이 다시 학습 데이터가 되는 순환 구조", options: { bullet: true } }], 0.45, 3.52, 9.1, 1.05, { fontSize: 10.8, paraSpaceAfter: 3 });
+  strip(s, ["규칙 계층만 바꾸면 되는 구조 : ", ["모델을 다시 만들 필요가 없다"]], 4.75);
+  s.addNotes("확장입니다. 건강기능식품에서 시작해 가공식품과 명절 선물세트로 넓히고, 지금은 잡음으로 지우는 품목보고번호를 읽으면 제품 조회와 회수 대상 확인까지 할 수 있습니다. 같은 파이프라인은 공장의 출하 전 날짜 인쇄 확인이나 의약품 표시물 검증에도 형식 규칙만 바꿔 쓸 수 있습니다.");
+}
+
+// 20. 마무리
+{
+  const s = pres.addSlide(); s.background = { color: RED };
+  s.addShape(pres.shapes.RECTANGLE, { x: 0.7, y: 0.75, w: 0.08, h: 0.55, fill: { color: WHITE }, line: { color: WHITE, width: 0 } });
+  txt(s, "정리", 0.95, 0.72, 8, 0.6, { fontSize: 26, bold: true, color: WHITE, valign: "middle" });
+  const pts = [["제약에서 출발", "4코어 CPU · 2,500초 안에서 끝까지 돌아가는 구조. 봉인 500장 86.2%, 한도의 60%"],
+               ["검증을 먼저", "전수 라벨링, 봉인 시험지, 회복·퇴보 기준. 점수가 올라도 퇴보가 크면 버렸다"],
+               ["틀리는 방식을 설계", "확신이 없으면 NONE, 판매자가 직접 입력. 정확도는 안전성이 아니라 자동 입력 비율이 된다"]];
+  pts.forEach((p, i) => {
+    const y = 1.7 + i * 1.05;
+    s.addShape(pres.shapes.OVAL, { x: 0.95, y: y + 0.03, w: 0.5, h: 0.5, fill: { color: WHITE }, line: { color: WHITE, width: 0 } });
+    txt(s, String(i + 1), 0.95, y + 0.03, 0.5, 0.5, { fontFace: KR, fontSize: 16, bold: true, color: RED, align: "center", valign: "middle" });
+    txt(s, p[0], 1.65, y - 0.02, 7.6, 0.34, { fontSize: 16, bold: true, color: WHITE, valign: "middle" });
+    txt(s, p[1], 1.65, y + 0.32, 7.6, 0.4, { fontSize: 11.5, color: WHITE });
+  });
+  txt(s, "감사합니다  |  github.com/LEEbyeongchul/itda3-CODE-subway", 0.95, 4.95, 8.3, 0.3, { fontSize: 11, color: WHITE });
+  pageNum(s, true);
+  s.addNotes("정리하겠습니다. 첫째, 제약에서 출발해 봉인 500장 86.2퍼센트를 한도의 60퍼센트 시간에 냈습니다. 둘째, 검증을 먼저 세웠습니다. 점수가 올라도 잘 맞히던 걸 망가뜨리면 버렸습니다. 셋째, 틀리는 방식을 설계했습니다. 확신이 없으면 못 읽었다고 말하기 때문에, 판매자가 믿고 쓸 수 있습니다. 감사합니다.");
+}
+
+// 21~. 부록 (Q&A 대비)
+{
+  const s = content("부록 : ", "날짜 해석 규칙표 (모호한 표기)");
+  table(s, [["상황", "해석", "근거 (전수 라벨 3,352장)"],
+            ["4자리 연도가 앞 / 뒤", "앞이면 년/월/일, 뒤면 일/월/년. 구분자 종류는 무관", "연도 앞 2,217 · 연도 뒤 362"],
+            ["2자리 세 개 (26.03.20)", "년/월/일 우선. 무효이거나 연도 2028 이상이면 일/월/년", "년월일 344 : 일월년 102"],
+            ["영문 유통 문구 (BBD, BEST BEFORE, EXP)", "같은 사진에 있으면 일/월/년 우선", "수입품 표기 관행"],
+            ["공백 구분 (30 12 23)", "일/월/년", "전부 수입품"],
+            ["영문 월 (04-Jul-21, 22OCT2021)", "월 위치 확정, 4자리는 연도", "148장"],
+            ["월/일/년 (06/18/23)", "일/월/년이 불가능할 때만 (가운데 13 이상)", "확정 미국식 2장"],
+            ["연월만 / 월일만", "YYYY-MM-NONE / NONE-MM-DD", "운영진 확정"],
+            ["날짜가 여럿", "가장 좋은 등급 안에서 가장 늦은 날짜", "병기 345장 (10.3%)"]],
+        0.3, 1.0, 9.4, [3.0, 4.2, 2.2], { fontSize: 10, rowH: 0.385 });
+  strip(s, ["해석 기본값은 감이 아니라 ", ["직접 단 라벨의 통계"], " 로 정했다"], 4.75);
+  s.addNotes("질의응답용 부록입니다. 모호한 날짜 표기를 어떻게 해석하는지와 그 근거입니다.");
+}
+{
+  const s = content("부록 : ", "측정 수치 한눈에");
+  table(s, [["측정셋", "구성", "완전일치", "필드평균", "비고"],
+            ["봉인 500장", "예선 제출본 (9/13)", "84.2%", "88.8%", "미인식 17"],
+            ["봉인 500장", "본선 통합본 (9/28)", { text: "86.2%", bold: true, red: true }, { text: "90.8%", bold: true, red: true }, "미인식 15, 정밀도 88.9%"],
+            ["판정용 2,852장", "예선 구성", "81.9%", "", "라벨 점검 후 82.3%, 병기 64.1%"],
+            ["판정용 2,852장", "본선 최종 (한국어 2차 의견 끔)", "86.7%", "", "라벨 점검 후, 병기 78.3%"],
+            ["판정용 2,852장", "통합본 (9/24, 규칙 4개 전)", "85.1%", "89.8%", "예선 대비 +97 / −6"],
+            ["직접 촬영 389장", "본선 통합본", "52.4%", "62.8%", "약점 유형 위주, 미인식 22%"]],
+        0.3, 1.0, 9.4, [1.7, 3.0, 1.2, 1.2, 2.3], { fontSize: 10, rowH: 0.36 });
+  txt(s, [{ text: "완전일치 : 연·월·일이 모두 맞은 사진 비율", options: { bullet: true, breakLine: true } },
+          { text: "필드평균 : 연·월·일을 따로 채점한 평균 (운영진 채점 방식)", options: { bullet: true, breakLine: true } },
+          { text: "회복 / 퇴보 : 이전 버전 대비 새로 맞힌 장 / 새로 틀린 장", options: { bullet: true } }], 0.3, 3.7, 9.4, 0.95, { fontSize: 10.8, paraSpaceAfter: 3 });
+  strip(s, ["모든 수치의 예측 파일과 실험 기록은 ", ["저장소 results/ · docs/실험_기록.md"], " 에 있다"], 4.75);
+  s.addNotes("질의응답용 부록입니다. 측정셋별 수치 전체입니다.");
+}
+
+pres.writeFile({ fileName: path.join(__dirname, "[CODE]_서브웨이_본선발표.pptx") }).then((f) => console.log("saved", f, "slides", pageNo));
