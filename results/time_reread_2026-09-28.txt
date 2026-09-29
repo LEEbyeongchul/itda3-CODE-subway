@@ -1,0 +1,16 @@
+parse_dates 자가검증 통과
+한국어 인식기 로드 (ITDA_KO_KEYWORD / ITDA_KO_LINE)
+인식기: 사전학습 1순위 + NONE 시 파인튜닝(en_PP-OCRv5_mobile_rec_ft) 폴백
+사다리 (640, 1024) · 탐지 리사이즈 기본(resize_long 960) · box_thresh 0.6
+로드 완료 (offline): 탐지 PaddleOCR PP-OCRv5_mobile_det + 인식 PaddleOCR en_PP-OCRv5_mobile_rec
+cur  : 장당 평균 3.19s  p90 4.07s  최대 23.2s  (60장 191s)  cur 와 답이 다른 장 0
+t    : 장당 평균 3.53s  p90 4.29s  최대 25.3s  (60장 212s)  cur 와 답이 다른 장 0
+s    : 장당 평균 3.83s  p90 4.51s  최대 30.3s  (60장 230s)  cur 와 답이 다른 장 1
+st   : 장당 평균 3.75s  p90 4.37s  최대 31.5s  (60장 225s)  cur 와 답이 다른 장 1
+cur2 : 장당 평균 3.15s  p90 3.87s  최대 27.0s  (60장 189s)  cur 와 답이 다른 장 0
+cur   − cur: 장당 +0.00s
+t     − cur: 장당 +0.34s
+s     − cur: 장당 +0.64s
+st    − cur: 장당 +0.57s
+cur2  − cur: 장당 -0.04s
+done
