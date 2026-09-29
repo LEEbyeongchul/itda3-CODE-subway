@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>소비기한 판독 운영 대시보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* 발표 슬라이드(진한 빨강 + 회색 카드)와 같은 색. 캡처해서 PPT 에 넣으므로 밝은 화면으로 고정 */
+:root{
+  color-scheme:light;
+  --brand:#8B0000; --brand-soft:#F6E3E3; --ink:#1A1A1A; --ink2:#4A4A4A; --mute:#6B6B6B;
+  --plane:#F4F4F2; --surface:#FFFFFF; --card:#F2F2F2; --hair:#E3E3E3; --axis:#BFBFBF; --dark:#3A3A3A;
+  --m-gray:#7A7A7A; --m-light:#D4D4D4;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#E9E9E7;overflow:hidden}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;color:var(--ink);font-weight:500;-webkit-font-smoothing:antialiased}
+#stage{position:absolute;width:1600px;height:900px;transform-origin:0 0;background:var(--plane);display:flex;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* 왼쪽 메뉴 */
+.nav{width:212px;background:var(--brand);color:#fff;padding:26px 0 18px;display:flex;flex-direction:column;flex:none}
+.nav .team{padding:0 22px;font-size:12px;opacity:.8;letter-spacing:.02em}
+.nav h1{margin:6px 22px 26px;font-size:19px;line-height:1.3;font-weight:700}
+.nav a{display:flex;align-items:center;gap:10px;padding:12px 22px;color:#fff;text-decoration:none;font-size:14.5px;font-weight:600;opacity:.72;border-left:4px solid transparent}
+.nav a .n{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);display:grid;place-items:center;font-size:11px;flex:none}
+.nav a.on{opacity:1;background:rgba(255,255,255,.12);border-left-color:#fff}
+.nav a.on .n{background:#fff;color:var(--brand);border-color:#fff}
+.nav .foot{margin-top:auto;padding:0 22px;font-size:11px;line-height:1.55;opacity:.78}
+
+/* 본문 */
+main{flex:1;min-width:0;position:relative}
+.page{position:absolute;inset:0;padding:22px 28px 20px;display:none;flex-direction:column;gap:14px}
+.page.on{display:flex}
+.head{display:flex;align-items:flex-end;gap:16px;flex:none}
+.head .bar{width:5px;height:34px;background:var(--brand);flex:none;align-self:center}
+.head h2{margin:0;font-size:23px;font-weight:700;line-height:1.2}
+.head h2 em{font-style:normal;color:var(--brand)}
+.head p{margin:3px 0 0;font-size:13px;color:var(--mute)}
+.head .meta{margin-left:auto;font-size:12px;color:var(--mute);text-align:right;line-height:1.5}
+.card{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px;min-width:0;display:flex;flex-direction:column}
+.card h3{margin:0;font-size:14px;font-weight:700}
+.card .sub{font-size:11.5px;color:var(--mute);margin-top:2px}
+.row{display:flex;gap:14px;min-height:0}
+.grow{flex:1;min-width:0}
+.strip{background:var(--card);border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;text-align:center;flex:none}
+.strip b,.red{color:var(--brand);font-weight:700}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--card);color:var(--ink2);white-space:nowrap}
+.tag.real{background:var(--brand-soft);color:var(--brand)}
+
+/* 거름 줄 */
+.filters{display:flex;align-items:center;gap:18px;flex:none;font-size:12.5px}
+.filters label{color:var(--mute);margin-right:6px}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--hair);border-radius:8px;padding:2px}
+.seg button{border:0;background:none;padding:5px 12px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+.seg button.on{background:var(--dark);color:#fff}
+.pill{background:var(--surface);border:1px solid var(--hair);border-radius:8px;padding:6px 12px;font-weight:600}
+
+/* 숫자 타일 */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;flex:none}
+.kpi{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--mute);font-weight:600}
+.kpi .v{font-size:29px;font-weight:700;line-height:1.15;margin-top:4px}
+.kpi .v small{font-size:14px;font-weight:600;color:var(--ink2);margin-left:3px}
+.kpi .d{font-size:11.5px;color:var(--mute);margin-top:3px}
+.kpi.hero{background:var(--brand);border-color:var(--brand);color:#fff}
+.kpi.hero .l,.kpi.hero .d,.kpi.hero .v small{color:rgba(255,255,255,.85)}
+
+/* 그림 */
+svg text{font-family:inherit}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--ink2);margin-top:6px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+#tip{position:fixed;pointer-events:none;background:#1A1A1A;color:#fff;border-radius:6px;padding:7px 10px;font-size:12px;line-height:1.45;opacity:0;transition:opacity .1s;z-index:10;max-width:260px}
+#tip b{font-size:14px;display:block}
+.hit{cursor:default}
+.hit:hover{filter:brightness(1.12)}
+
+/* 전략 맵 */
+.smap{display:grid;grid-template-columns:118px 1.05fr 1.25fr 1.25fr 1.15fr;grid-template-rows:auto 1fr 1fr 1fr;gap:0;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface);flex:1;min-height:0}
+.smap>div{padding:14px 16px;border-bottom:1px solid var(--hair);border-right:1px solid var(--hair);font-size:14px;line-height:1.55;display:flex;flex-direction:column;justify-content:center}
+.smap>div:nth-child(5n){border-right:0}
+.smap>div:nth-last-child(-n+5){border-bottom:0}
+.smap .th{background:var(--dark);color:#fff;font-weight:700;font-size:12.5px;padding:9px 16px}
+.smap .who{background:var(--card);font-weight:700;font-size:16px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.smap .who span{font-size:11px;color:var(--mute);font-weight:600}
+.smap .pain{font-size:17px;font-weight:700;line-height:1.4}
+.smap ul{margin:0;padding-left:16px}
+.smap li{margin-bottom:5px}
+.smap li b{color:var(--brand)}
+.smap .st b.t{display:block;font-size:17px;color:var(--brand);margin-bottom:6px}
+.smap .mt{display:flex;flex-direction:column;gap:7px;justify-content:center}
+.mrow{display:flex;align-items:baseline;gap:8px;background:var(--card);border-radius:7px;padding:7px 10px}
+.mrow .mv{font-size:19px;font-weight:700;color:var(--brand);white-space:nowrap}
+.mrow .ml{font-size:11.5px;color:var(--ink2);line-height:1.35}
+.flow{display:flex;align-items:stretch;gap:0;flex:none}
+.flow .st{flex:1;background:var(--dark);color:#fff;border-radius:8px;padding:10px 14px}
+.flow .st b{display:block;font-size:14px}
+.flow .st span{font-size:11.5px;opacity:.85}
+.flow .ar{width:26px;display:grid;place-items:center;color:var(--mute);font-size:12px}
+
+/* 표 */
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{background:var(--dark);color:#fff;text-align:left;font-weight:700;padding:8px 10px;font-size:12px}
+td{padding:9px 10px;border-bottom:1px solid var(--hair);vertical-align:middle}
+#qbody td{padding:15px 10px;font-size:13px}
+tr.sel td{background:var(--brand-soft)}
+tbody tr{cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--card);color:var(--ink);white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.prio{font-weight:700}
+
+/* 기록 */
+.log{list-style:none;margin:0;padding:0;font-size:12px}
+.log li{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--hair)}
+.log li:last-child{border:0}
+.log time{color:var(--mute);font-variant-numeric:tabular-nums;flex:none;width:58px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp div{background:var(--card);border-radius:8px;padding:9px 12px}
+.cmp .l{font-size:11.5px;color:var(--mute)}
+.cmp .v{font-size:21px;font-weight:700}
+.zoom{width:100%;border-radius:8px;border:1px solid var(--hair);display:block;background:#000;object-fit:contain}
+
+/* 판매자 화면 */
+.phone{width:372px;height:790px;background:#111;border-radius:42px;padding:12px;flex:none;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.scr{width:100%;height:100%;background:#fff;border-radius:31px;overflow:hidden;display:flex;flex-direction:column;position:relative;font-size:13px}
+.sbar{height:34px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;font-weight:700}
+.tbar{height:44px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;border-bottom:1px solid var(--hair);position:relative}
+.tbar span{position:absolute;left:16px;color:var(--mute);font-weight:500;font-size:13px}
+.sbody{flex:1;overflow:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:11px}
+.fld{border:1px solid var(--hair);border-radius:9px;padding:9px 12px}
+.fld .l{font-size:11px;color:var(--mute)}
+.fld .v{font-size:15px;font-weight:600;margin-top:2px;min-height:21px;display:flex;align-items:center;gap:7px}
+.fld.date{border:2px solid var(--brand)}
+.fld.date.empty{border:2px dashed var(--axis)}
+.fld .v .ph{color:var(--axis);font-weight:500}
+.note{border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.5;background:var(--card)}
+.note.alert{background:var(--brand-soft)}
+.btns{display:flex;gap:8px}
+.btns span{flex:1;text-align:center;padding:10px 0;border-radius:9px;font-weight:700;font-size:13.5px;border:1px solid var(--hair)}
+.btns span.p{background:var(--brand);color:#fff;border-color:var(--brand)}
+.cam{flex:1;background:#000;position:relative;display:grid;place-items:center;overflow:hidden}
+.cam img{width:100%;height:100%;object-fit:cover;opacity:.92}
+.cam .guide{position:absolute;border:2.5px solid #fff;border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,.38)}
+.cam .msg{position:absolute;top:18px;left:0;right:0;text-align:center;color:#fff;font-weight:700;font-size:14px;text-shadow:0 1px 3px #000}
+.shut{height:92px;flex:none;background:#000;display:grid;place-items:center}
+.shut i{width:62px;height:62px;border-radius:50%;background:#fff;border:5px solid #000;outline:3px solid #fff;display:block}
+.post img.main{width:100%;height:250px;object-fit:cover;display:block}
+.dbox{border:1px solid var(--hair);border-radius:10px;padding:11px 12px;display:flex;gap:11px;align-items:center}
+.dbox img{width:96px;height:58px;object-fit:cover;border-radius:6px;border:1px solid var(--hair);flex:none;background:#000}
+.dbox .dv{font-size:15.5px;font-weight:700;white-space:nowrap}
+.dbox .dl{font-size:11px;color:var(--mute);line-height:1.45}
+.cases{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cases button{border:1px solid var(--hair);background:var(--surface);border-radius:9px;padding:9px 10px;text-align:left;font-size:12px;line-height:1.35}
+.cases button b{display:block;font-size:13px}
+.cases button.on{border-color:var(--brand);background:var(--brand-soft)}
+.steps{display:flex;gap:0;align-items:center}
+.steps button{border:0;background:var(--card);padding:9px 14px;font-size:13px;font-weight:700;border-radius:8px;color:var(--ink2);display:flex;gap:7px;align-items:center}
+.steps button .n{width:20px;height:20px;border-radius:50%;background:var(--axis);color:#fff;display:grid;place-items:center;font-size:11px}
+.steps button.on{background:var(--brand);color:#fff}
+.steps button.on .n{background:#fff;color:var(--brand)}
+.steps .ar{width:22px;text-align:center;color:var(--mute);font-size:11px}
+.play{margin-left:auto;border:1px solid var(--hair);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:700;font-size:12.5px}
+.exp h4{margin:0 0 6px;font-size:14px;font-weight:700}
+.exp ul{margin:0;padding-left:19px;font-size:15.5px;line-height:1.6}
+.exp li{margin-bottom:9px}
+.exp h4{font-size:17px !important;margin-bottom:12px !important}
+#slog{font-size:13px}
+#slog li{padding:8px 0}
+.exp li b{color:var(--brand)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <aside class="nav">
+    <div class="team">[CODE]_서브웨이</div>
+    <h1>소비기한 판독<br>운영 대시보드</h1>
+    <a href="#strategy" data-p="strategy"><span class="n">1</span>전략 맵</a>
+    <a href="#seller" data-p="seller"><span class="n">2</span>판매자 화면</a>
+    <a href="#ops" data-p="ops"><span class="n">3</span>운영 현황</a>
+    <a href="#queue" data-p="queue"><span class="n">4</span>검토 큐와 기록</a>
+    <a href="#cost" data-p="cost"><span class="n">5</span>비용과 확장</a>
+    <div class="foot">시연용 화면<br>운영 건수는 예시 데이터이고,<br>비율·시간·판독값은 팀이 잰<br>실측값을 넣었습니다.</div>
+  </aside>
+  <main>
+
+    <!-- 1. 전략 맵 -->
+    <section class="page" id="p-strategy">
+      <div class="head"><div class="bar"></div><div><h2>전략 맵 : <em>페인포인트에서 전략으로, 전략에서 지표로</em></h2><p>세 당사자의 문제를 하나의 흐름으로 풀고, 전략마다 대시보드에서 볼 숫자를 정했다</p></div>
+        <div class="meta">중고거래 플랫폼 · 식품·건강기능식품 게시글<br>2026-09-29 기준</div></div>
+      <div class="smap">
+        <div class="th">누구의 문제</div><div class="th">페인포인트</div><div class="th">근거</div><div class="th">전략</div><div class="th">대시보드 지표</div>
+
+        <div class="who">구매자<span>정보를 받는 쪽</span></div>
+        <div class="pain">적힌 날짜가 맞는지<br>확인할 방법이 없다</div>
+        <div><ul><li>약사 단체 모니터링에서 적발된 위반 375건 중 <b>211건</b>이 '사용기한 확인 불가·불일치'</li><li>중고거래 식료품·기호품 소비자 상담 <b>19건 → 661건</b> (2022 → 2025)</li></ul></div>
+        <div class="st"><b class="t">보증하지 않고 보여 준다</b>게시글에 판독 날짜, 남은 일수, 날짜면 원본을 함께 표시한다. '확인됨' 표시는 조작된 날짜에 신뢰를 빌려주므로 쓰지 않는다</div>
+        <div class="mt"><div class="mrow"><span class="mv">100%</span><span class="ml">날짜면 사진이 붙은 게시글<br>(촬영 필수, 설계값)</span></div><div class="mrow"><span class="mv">4.9%</span><span class="ml">남은 날을 많게 읽는 오류<br>(위험한 쪽, 따로 감시)</span></div></div>
+
+        <div class="who">판매자<span>정보를 넣는 쪽</span></div>
+        <div class="pain">포장에서 날짜를 찾아<br>손으로 옮겨 적는다</div>
+        <div><ul><li>소비기한은 게시글의 <b>필수 기재</b> 항목</li><li>사람이 옮겨 적은 날짜도 틀린다. 팀 라벨 오류 16장 중 <b>8장</b>이 숫자 한 글자</li></ul></div>
+        <div class="st"><b class="t">확신할 때만 채운다</b>확신도 0.7 이상이고 10초 안에 읽혔을 때만 칸을 채운다. 아니면 빈칸으로 두어 지금보다 나빠지지 않는다</div>
+        <div class="mt"><div class="mrow"><span class="mv">40.6%</span><span class="ml">자동 입력 비율</span></div><div class="mrow"><span class="mv">8.2%</span><span class="ml">틀린 값을 받는 판매자<br>(확대본을 보고 고친다)</span></div></div>
+
+        <div class="who">플랫폼<span>관리하는 쪽</span></div>
+        <div class="pain">위반을 게시 뒤에 찾고,<br>볼 사람이 모자란다</div>
+        <div><ul><li>게시글 48만 2,675건 중 위반 조치 <b>1만 4,729건</b> (3.05%)</li><li>전담 모니터링 인력 <b>5명</b>, 명절에는 위반이 평시의 <b>3배 이상</b></li></ul></div>
+        <div class="st"><b class="t">예외만 사람에게, 기록은 전부</b>입력값과 판독값이 다른 글만 검토 큐에 올린다. 게시글마다 원본·판독값·수정 이력을 남겨 규제 대응의 근거로 쓴다</div>
+        <div class="mt"><div class="mrow"><span class="mv">2.8%</span><span class="ml">사람이 볼 게시글<br>(검토 큐, 예시)</span></div><div class="mrow"><span class="mv">0.2 ~ 5.8원</span><span class="ml">게시글 한 건당 비용</span></div></div>
+      </div>
+      <div class="flow">
+        <div class="st"><b>① 찍는다</b><span>판매자가 날짜면을 촬영</span></div><div class="ar">▶</div>
+        <div class="st"><b>② 확신할 때만 채운다</b><span>서버 CPU · 10초 제한 · 확신도 0.7</span></div><div class="ar">▶</div>
+        <div class="st"><b>③ 판매자가 확인한다</b><span>날짜 확대본을 보며 확인·수정</span></div><div class="ar">▶</div>
+        <div class="st"><b>④ 보여 주고 남긴다</b><span>게시글 표시 · 판독 기록 보존</span></div>
+      </div>
+      <div class="strip">설계 원칙 : <b>틀릴 때 안전하게 틀린다.</b> 못 읽으면 빈칸이고, 틀리게 읽으면 판매자가 고친다. 그래서 정확도는 안전성이 아니라 <b>자동 입력 비율</b>을 정한다</div>
+    </section>
+
+    <!-- 2. 판매자 화면 -->
+    <section class="page" id="p-seller">
+      <div class="head"><div class="bar"></div><div><h2>판매자 화면 : <em>찍으면 채워지고, 확인하면 게시된다</em></h2><p>사진과 판독값·확신도·처리 시간은 실제 파이프라인 출력이다. 화면은 시연용으로 만들었다</p></div>
+        <div class="meta">오늘 2026-09-29</div></div>
+      <div class="row grow">
+        <div class="phone"><div class="scr" id="scr"></div></div>
+        <div class="grow" style="display:flex;flex-direction:column;gap:12px">
+          <div class="card" style="gap:10px"><h3>사례 고르기</h3><div class="cases" id="cases"></div></div>
+          <div class="card" style="flex-direction:row;align-items:center"><div class="steps" id="steps"></div><button class="play" id="play">▶ 자동 재생</button></div>
+          <div class="row grow">
+            <div class="card grow exp" id="exp"></div>
+            <div class="card" style="width:400px;gap:8px"><h3>이 게시글에 남는 기록</h3><ul class="log" id="slog"></ul></div>
+          </div>
+          <div class="strip" id="sstrip"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 운영 현황 -->
+    <section class="page" id="p-ops">
+      <div class="head"><div class="bar"></div><div><h2>운영 현황 : <em>얼마나 채웠고, 얼마나 틀렸는가</em></h2><p>자동 입력 기준을 바꾸면 채워지는 비율과 틀린 값이 어떻게 달라지는지 바로 본다</p></div>
+        <div class="meta"><span class="tag real">실측</span> 직접 촬영 389장에서 잰 비율·시간<br><span class="tag">예시</span> 게시글 수, 검토 큐 건수</div></div>
+      <div class="filters">
+        <div><label>기간</label><span class="seg" id="f-period"></span></div>
+        <div><label>카테고리</label><span class="pill">식품·건강기능식품</span></div>
+        <div><label>자동 입력 기준</label><span class="seg" id="f-policy"></span></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="row" style="height:268px;flex:none">
+        <div class="card" style="width:600px"><h3>하루 게시글 수 <span class="tag">예시</span></h3><div class="sub">최근 30일. 추석 연휴에는 선물세트 거래가 늘어 평소의 1.5배</div><div id="c-trend" class="grow"></div></div>
+        <div class="card grow"><h3>자동 입력 기준별 결과 <span class="tag real">실측</span></h3><div class="sub">줄을 누르면 기준이 바뀐다. 기준을 올리면 틀린 값은 줄고 손으로 넣는 판매자가 는다</div><div id="c-policy" class="grow"></div>
+          <div class="legend"><span><i style="background:var(--m-gray)"></i>맞게 채움</span><span><i style="background:var(--brand)"></i>틀리게 채움 (판매자가 고침)</span><span><i style="background:var(--m-light)"></i>빈칸 (손으로 입력)</span></div></div>
+      </div>
+      <div class="row grow">
+        <div class="card" style="width:430px"><h3>확신도 분포 <span class="tag real">실측</span></h3><div class="sub">완전한 날짜로 읽힌 사진. 기준선 오른쪽만 칸을 채운다</div><div id="c-conf" class="grow"></div></div>
+        <div class="card" style="width:430px"><h3>판독 시간 분포 <span class="tag real">실측</span></h3><div class="sub">중앙값 3.8초. 10초를 넘기면 기다리지 않고 빈칸으로 둔다</div><div id="c-time" class="grow"></div></div>
+        <div class="card grow" style="gap:8px"><h3>읽은 값이 틀릴 때의 방향 <span class="tag real">실측</span></h3><div class="sub">얼마나 틀렸는지보다 어느 쪽으로 틀렸는지가 중요하다</div><div id="c-dir" class="grow"></div></div>
+      </div>
+    </section>
+
+    <!-- 4. 검토 큐 -->
+    <section class="page" id="p-queue">
+      <div class="head"><div class="bar"></div><div><h2>검토 큐와 기록 : <em>예외만 사람에게 넘긴다</em></h2><p>수정만으로 제재하지 않는다. 입력값과 판독값의 차이는 사후 검토의 우선순위 신호로만 쓴다</p></div>
+        <div class="meta"><span class="tag real">실측</span> 사진·판독값·확신도<br><span class="tag">예시</span> 게시글, 입력값, 시각</div></div>
+      <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi hero"><div class="l">오늘 검토 큐</div><div class="v">23<small>건</small></div><div class="d">게시글 812건의 2.8%</div></div>
+        <div class="kpi"><div class="l">사람이 보지 않아도 되는 글</div><div class="v">97.2<small>%</small></div><div class="d">789건은 기록만 남기고 게시</div></div>
+        <div class="kpi"><div class="l">게시 보류 (기한 경과)</div><div class="v">4<small>건</small></div><div class="d">판매자가 확인한 날짜로 판정</div></div>
+        <div class="kpi"><div class="l">판독 기록 보존</div><div class="v">812<small>건 전부</small></div><div class="d">원본 · 판독값 · 확신도 · 수정 이력 · 모델 버전</div></div>
+      </div>
+      <div class="row grow">
+        <div class="card grow" style="padding:0;overflow:hidden"><table><thead><tr><th>우선순위</th><th>시각</th><th>게시글</th><th>사유</th><th>판독값</th><th>확신도</th><th>입력값</th><th>처리</th></tr></thead><tbody id="qbody"></tbody></table>
+          <div style="padding:10px 14px;font-size:11.5px;color:var(--mute);margin-top:auto">우선순위 기준 : 확신도가 높은데 판매자가 더 늦은 날짜로 고쳤으면 높음. 더 이른 날짜로 고쳤거나 확신도가 낮았으면 보통·낮음</div></div>
+        <div class="card" style="width:500px;gap:10px" id="qdetail"></div>
+      </div>
+    </section>
+
+    <!-- 5. 비용과 확장 -->
+    <section class="page" id="p-cost">
+      <div class="head"><div class="bar"></div><div><h2>비용과 확장 : <em>싸게 돌리고, 가치는 과장하지 않는다</em></h2><p>인력 절감으로 설명하지 않는다. 처리비 절감만으로는 본전이 되지 않는다는 계산을 먼저 공개한다</p></div>
+        <div class="meta">건강기능식품 카테고리 기준<br>월 약 2.4만 건 · 하루 약 800건</div></div>
+      <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi hero"><div class="l">게시글 한 건당 비용</div><div class="v">0.2 ~ 5.8<small>원</small></div><div class="d">연 7만 ~ 169만 원 ÷ 연 약 29만 건</div></div>
+        <div class="kpi"><div class="l">서버 사용량</div><div class="v">4 ~ 10<small>%</small></div><div class="d">4코어 서버 1대. 하루 53분 ~ 2.4시간</div></div>
+        <div class="kpi"><div class="l">라이선스 · GPU · 학습비</div><div class="v">0<small>원</small></div><div class="d">공개 모델 21MB, CPU 전용</div></div>
+        <div class="kpi"><div class="l">외부 API</div><div class="v">없음</div><div class="d">인터넷 없이 동작. 사진이 밖으로 나가지 않는다</div></div>
+      </div>
+      <div class="row grow">
+        <div class="card" style="width:520px"><h3>처리비 절감만으로는 본전이 되지 않는다</h3><div class="sub">위반 1건을 걸러 아껴야 하는 금액(손익분기)과 실제 검토 비용</div><div id="c-roi" class="grow"></div>
+          <div class="sub" style="margin-top:4px">게시 전에 걸러지는 비율 50% 가정. 개발·화면 변경 비용은 포함하지 않았다</div></div>
+        <div class="grow" style="display:flex;flex-direction:column;gap:14px">
+        <div class="card" style="padding:0;overflow:hidden"><table style="font-size:13px"><thead><tr><th style="width:36%">비용 계산</th><th style="width:34%">식</th><th>값</th></tr></thead><tbody style="cursor:default">
+          <tr><td><b>하루 연산 시간</b></td><td>800장 × 4.0 ~ 10.8초 (10초 제한이면 5.2초)</td><td>53분 ~ 2.4시간</td></tr>
+          <tr><td><b>서버 비용</b></td><td>4 vCPU · 8GB, 시간당 196원</td><td>전용 1대 연 169만 원. 기존 서버의 여유분이면 연 7만 ~ 17만 원</td></tr>
+          <tr><td><b>사람 검토</b></td><td>이의 제기와 검토 큐만</td><td>게시글의 약 2.8% (예시)</td></tr>
+        </tbody></table></div>
+        <div class="card grow" style="padding:0;overflow:hidden"><table style="font-size:13px"><thead><tr><th style="width:36%">얻는 것</th><th style="width:18%">OCR 이 있어야 하나</th><th>근거</th></tr></thead><tbody style="cursor:default">
+          <tr><td><b>입력값과 사진의 대조</b></td><td class="red">예</td><td>틀린 입력이 판독값과 우연히 같아 지나갈 확률 0.2%</td></tr>
+          <tr><td><b>날짜면이 찍혔는지 확인</b></td><td class="red">예</td><td>일본 메루카리는 이 확인을 사람이 사진으로 한다</td></tr>
+          <tr><td><b>입력 편의, 라벨 축적</b></td><td class="red">예</td><td>41 ~ 45% 자동 입력. 검수한 수정값은 학습 데이터가 된다</td></tr>
+          <tr><td><b>규제 대응</b></td><td class="red">예</td><td>시범사업 중이고 전담 인력 5명이라는 지적. 게시글마다 남는 판독 기록이 관리 체계의 증거</td></tr>
+          <tr><td>남은 일수 표시, 기한 지난 글 숨김</td><td>아니오</td><td>날짜 칸만 있으면 된다. OCR 의 효과로 세지 않았다</td></tr>
+        </tbody></table></div></div>
+      </div>
+      <div class="flow">
+        <div class="st"><b>1단계 · 건강기능식품</b><span>위반 통계가 공개된 카테고리. 서버 추론</span></div><div class="ar">▶</div>
+        <div class="st"><b>2단계 · 가공식품, 명절 선물세트</b><span>상품별로 찍고 가장 이른 날짜를 표시</span></div><div class="ar">▶</div>
+        <div class="st"><b>3단계 · 품목보고번호 판독</b><span>제품 조회와 회수 대상 확인</span></div><div class="ar">▶</div>
+        <div class="st" style="background:var(--brand)"><b>같은 뼈대 · 공장 출하 검수</b><span>읽기 → 기준값과 대조 → 예외만 사람에게</span></div>
+      </div>
+      <div class="strip">플랫폼이 도입할 이유는 비용 절감이 아니라 <b>규제 대응과 확인할 수 있는 정보</b>다. 그 값을 게시글 한 건당 <b>0.2 ~ 5.8원</b>에 얻는다</div>
+    </section>
+  </main>
+</div>
+<div id="tip"></div>
+
+<script>
+/* ───────── 하드코딩한 데이터 ─────────
+   [실측] 팀이 잰 값 (docs/본선보고서_초안_D.md, results/*.csv)
+   [예시] 시연을 위해 넣은 값 */
+const TODAY = new Date(2026, 8, 29);
+const $ = (s, r) => (r || document).querySelector(s);
+const el = (t, a, ...c) => { const e = document.createElement(t); for (const k in (a || {})) { if (k === 'text') e.textContent = a[k]; else if (k === 'html') e.innerHTML = a[k]; else e.setAttribute(k, a[k]); } c.flat().forEach(x => x != null && e.append(x)); return e; };
+const NS = 'http://www.w3.org/2000/svg';
+const sv = (t, a, ...c) => { const e = document.createElementNS(NS, t); for (const k in (a || {})) { if (k === 'text') e.textContent = a[k]; else e.setAttribute(k, a[k]); } c.flat().forEach(x => x != null && e.append(x)); return e; };
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const daysLeft = d => Math.round((new Date(d) - TODAY) / 864e5) + 0;
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// [실측] 자동 입력 기준별 결과 — 직접 촬영 389장. fill=채워지는 비율, wrong=틀린 값을 받는 판매자 (분모는 전체 사진)
+const POLICY = {
+  none: { name: '읽히면 채움', short: '읽히면 채움', fill: 70.2, wrong: 20.8, sec: 10.8, thr: 0 },
+  c07:  { name: '확신도 0.7 이상', short: '0.7 이상', fill: 44.7, wrong: 10.3, sec: 10.8, thr: 0.7 },
+  ops:  { name: '0.7 이상 + 10초 제한', short: '0.7 + 10초 제한', fill: 40.6, wrong: 8.2, sec: 5.2, thr: 0.7, ops: true },
+  c09:  { name: '확신도 0.9 이상', short: '0.9 이상', fill: 16.5, wrong: 2.1, sec: 10.8, thr: 0.9 },
+};
+// [실측] 확신도 분포 (완전한 날짜 273장 / 389장), 판독 시간 분포 (389장)
+const CONF = [['0.5 미만', 36, 0.0], ['0.5 ~ 0.6', 24, 0.5], ['0.6 ~ 0.7', 39, 0.6], ['0.7 ~ 0.8', 53, 0.7], ['0.8 ~ 0.9', 57, 0.8], ['0.9 이상', 64, 0.9]];
+const TIME = [['2초 미만', 29.6], ['2 ~ 4초', 21.6], ['4 ~ 6초', 11.3], ['6 ~ 8초', 3.6], ['8 ~ 10초', 2.3], ['10초 초과', 31.6]];
+// [실측] 오답의 방향 (라벨이 완전한 날짜인 사진 기준)
+const DIR = [['못 읽음', '빈칸. 손으로 입력 (지금과 같음)', 21.9, 'g'], ['이르게 읽음', '남은 날이 적게 표시. 판매자에게 불리', 15.8, 'g'], ['늦게 읽음', '남은 날이 많게 표시. 구매자에게 위험', 4.9, 'r']];
+// [예시] 하루 게시글 수 30일 (8/31 ~ 9/29). 추석 연휴 9/21 ~ 27 은 평소의 약 1.5배
+const TREND = [778, 801, 794, 812, 826, 760, 742, 785, 809, 798, 817, 834, 771, 748, 792, 806, 821, 840, 858, 902, 968, 1148, 1204, 1236, 1262, 1241, 1215, 1187, 1024, 812]
+  .map((v, i) => { const d = new Date(2026, 7, 31 + i); return { d, v, l: (d.getMonth() + 1) + '/' + d.getDate() }; });
+const PERIOD = { d1: { name: '오늘', n: 1 }, d7: { name: '최근 7일', n: 7 }, d30: { name: '최근 30일', n: 30 } };
+
+// [실측] 사진·판독값·확신도·처리 시간은 results/debug*.csv 의 실제 출력. [예시] 게시글 제목·가격
+const PHOTO = {
+  '000735': { title: '알룰로스 485g 미개봉', price: '6,000원', read: '2027-01-12', conf: 0.98, sec: 2.0, truth: '2027-01-12', box: [30.0, 52.0, 31.4, 4.7] },
+  '000413': { title: '청국장가루 300g 새 상품', price: '9,000원', read: '2027-04-23', conf: 0.58, sec: 1.1, truth: '2027-04-23', box: [45.2, 44.4, 31.1, 3.4] },
+  '000159': { title: '맛술 미개봉 1병', price: '3,500원', read: '2027-01-01', conf: 0.95, sec: 4.4, truth: '2027-01-08', box: [29.0, 61.2, 32.9, 5.0] },
+  '000007': { title: '젤리 81g 2봉', price: '2,000원', read: '2026-06-25', conf: 0.78, sec: 2.8, truth: '2026-06-25', box: [37.9, 64.7, 47.1, 8.6], other: '2025-06-26' },
+  '000486': { title: '깻잎 통조림 70g', price: '1,500원', read: null, conf: null, sec: 20.9, truth: '2027-07-15', box: [28.2, 38.9, 43.7, 8.9] },
+  '000210': { title: '카레 분말 100g', price: '2,500원', read: '2031-05-07', conf: 0.63, sec: 2.1, truth: '2027-05-20', box: [27.1, 41.7, 41.0, 7.0] },
+};
+const img = (id, crop) => 'img/' + id + (crop ? '_crop' : '') + '.jpg';
+
+/* ───────── 도움말 상자 ───────── */
+const tip = $('#tip');
+function bindTip(node, head, body) {
+  node.classList.add('hit'); node.setAttribute('tabindex', '0');
+  const show = e => { tip.replaceChildren(el('b', { text: head }), document.createTextNode(body)); tip.style.opacity = 1; const r = node.getBoundingClientRect(); const x = (e.clientX || r.left + r.width / 2) + 14, y = (e.clientY || r.top) - 10; tip.style.left = Math.min(x, innerWidth - 270) + 'px'; tip.style.top = Math.max(8, y - 40) + 'px'; };
+  node.addEventListener('pointermove', show); node.addEventListener('focus', show);
+  node.addEventListener('pointerleave', () => tip.style.opacity = 0); node.addEventListener('blur', () => tip.style.opacity = 0);
+}
+function chartBox(host) { host.replaceChildren(); const w = host.clientWidth, h = host.clientHeight; const s = sv('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}` }); host.append(s); return { s, w, h }; }
+const T = (x, y, text, o) => sv('text', Object.assign({ x, y, text, 'font-size': 11.5, fill: css('--mute') }, o || {}));
+
+/* ───────── 3. 운영 현황 ───────── */
+const S = { page: 'strategy', policy: 'ops', period: 'd1', caseId: 'A', step: 1, q: 0 };
+
+function segCtl(host, items, cur, on) {
+  host.replaceChildren(...Object.keys(items).map(k => { const b = el('button', { text: items[k].short || items[k].name }); if (k === cur) b.className = 'on'; b.onclick = () => on(k); return b; }));
+}
+function renderOps() {
+  const P = POLICY[S.policy], n = PERIOD[S.period].n;
+  const N = TREND.slice(-n).reduce((a, r) => a + r.v, 0);
+  segCtl($('#f-period'), PERIOD, S.period, k => { S.period = k; go(); });
+  segCtl($('#f-policy'), POLICY, S.policy, k => { S.policy = k; go(); });
+  const per = PERIOD[S.period].name;
+  const k = [
+    ['게시글 (날짜면 촬영)', fmt(N), '건', per + ' · 예시', 0],
+    ['자동 입력', P.fill.toFixed(1), '%', fmt(N * P.fill / 100) + '건을 대신 채움', 1],
+    ['빈칸 (손으로 입력)', (100 - P.fill).toFixed(1), '%', fmt(N * (100 - P.fill) / 100) + '건. 지금과 같은 방식', 0],
+    ['틀린 값을 받은 판매자', P.wrong.toFixed(1), '%', fmt(N * P.wrong / 100) + '건. 확대본을 보고 고침', 0],
+    ['채운 값의 정확도', ((P.fill - P.wrong) / P.fill * 100).toFixed(1), '%', '채운 ' + fmt(N * P.fill / 100) + '건 중 맞는 값', 0],
+    ['평균 판독 시간', P.sec.toFixed(1), '초', P.ops ? '10초 제한 적용' : '제한 없음 (가장 긴 것 84초)', 0],
+  ];
+  $('#kpis').replaceChildren(...k.map(r => el('div', { class: 'kpi' + (r[4] ? ' hero' : '') }, el('div', { class: 'l', text: r[0] }), el('div', { class: 'v' }, r[1], el('small', { text: r[2] })), el('div', { class: 'd', text: r[3] }))));
+  drawTrend(n); drawPolicy(); drawConf(P.thr); drawTime(P.ops); drawDir();
+}
+
+function drawTrend(n) {
+  const { s, w, h } = chartBox($('#c-trend'));
+  const L = 40, R = 46, Tp = 16, B = 24, pw = w - L - R, ph = h - Tp - B, max = 1500;
+  const X = i => L + pw * i / (TREND.length - 1), Y = v => Tp + ph * (1 - v / max);
+  // 연휴 구간
+  s.append(sv('rect', { x: X(21) - 6, y: Tp, width: X(27) - X(21) + 12, height: ph, fill: css('--brand-soft') }));
+  s.append(T((X(21) + X(27)) / 2, Tp + ph - 9, '추석 연휴 9/21 ~ 27', { 'text-anchor': 'middle', fill: css('--brand'), 'font-weight': 700 }));
+  [0, 500, 1000, 1500].forEach(v => { s.append(sv('line', { x1: L, x2: w - R, y1: Y(v), y2: Y(v), stroke: v ? css('--hair') : css('--axis'), 'stroke-width': 1 })); s.append(T(L - 8, Y(v) + 4, fmt(v), { 'text-anchor': 'end', style: 'font-variant-numeric:tabular-nums' })); });
+  [0, 7, 14, 21, 29].forEach(i => s.append(T(X(i), h - 6, TREND[i].l, { 'text-anchor': 'middle' })));
+  // 고른 기간
+  const from = TREND.length - n;
+  if (n < 30) s.append(sv('rect', { x: X(from) - (n === 1 ? 5 : 0), y: Tp, width: Math.max(10, X(29) - X(from)), height: ph, fill: '#000', opacity: .05 }));
+  const pts = TREND.map((r, i) => [X(i), Y(r.v)]);
+  s.append(sv('path', { d: 'M' + pts.map(p => p.join(',')).join('L') + `L${X(29)},${Y(0)}L${X(0)},${Y(0)}Z`, fill: css('--dark'), opacity: .08 }));
+  s.append(sv('path', { d: 'M' + pts.map(p => p.join(',')).join('L'), fill: 'none', stroke: css('--dark'), 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+  const pk = 24; // 최고점
+  [[pk, css('--brand')], [29, css('--dark')]].forEach(([i, c]) => { s.append(sv('circle', { cx: X(i), cy: Y(TREND[i].v), r: 5, fill: c, stroke: '#fff', 'stroke-width': 2 })); });
+  s.append(T(X(pk), Y(TREND[pk].v) - 11, fmt(TREND[pk].v) + '건', { 'text-anchor': 'middle', fill: css('--ink'), 'font-weight': 700, 'font-size': 12.5 }));
+  s.append(T(X(29) + 8, Y(TREND[29].v) + 4, fmt(TREND[29].v), { fill: css('--ink'), 'font-weight': 700, 'font-size': 12.5 }));
+  // 십자선
+  const cross = sv('line', { y1: Tp, y2: Tp + ph, stroke: css('--axis'), 'stroke-width': 1, opacity: 0 }); s.append(cross);
+  const ov = sv('rect', { x: L, y: Tp, width: pw, height: ph, fill: 'transparent' }); s.append(ov);
+  ov.addEventListener('pointermove', e => { const r = s.getBoundingClientRect(); const i = Math.max(0, Math.min(29, Math.round(((e.clientX - r.left) * (w / r.width) - L) / pw * 29))); cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('opacity', 1); tip.replaceChildren(el('b', { text: fmt(TREND[i].v) + '건' }), document.createTextNode(TREND[i].l + ' 게시글')); tip.style.opacity = 1; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 46) + 'px'; });
+  ov.addEventListener('pointerleave', () => { cross.setAttribute('opacity', 0); tip.style.opacity = 0; });
+}
+
+function drawPolicy() {
+  const { s, w, h } = chartBox($('#c-policy'));
+  const keys = Object.keys(POLICY), L = 168, R = 14, rh = Math.min(44, (h - 6) / keys.length), bw = w - L - R, bt = 22;
+  keys.forEach((k, i) => {
+    const P = POLICY[k], y = 3 + i * rh, on = k === S.policy;
+    const g = sv('g', { style: 'cursor:pointer' }); g.onclick = () => { S.policy = k; go(); };
+    g.append(sv('rect', { x: 0, y, width: w, height: rh - 4, rx: 7, fill: on ? css('--brand-soft') : 'transparent' }));
+    g.append(T(12, y + rh / 2 + 2, P.name + (P.ops ? '  ◀ 운영' : ''), { 'font-size': 12.5, fill: css('--ink'), 'font-weight': on ? 700 : 500 }));
+    const segs = [[P.fill - P.wrong, css('--m-gray'), '맞게 채움', '#fff'], [P.wrong, css('--brand'), '틀리게 채움', '#fff'], [100 - P.fill, css('--m-light'), '빈칸', css('--ink')]];
+    let x = L;
+    segs.forEach(([v, c, name, tc], j) => {
+      const sw = bw * v / 100, r = sv('rect', { x: x + (j ? 2 : 0), y: y + (rh - 4 - bt) / 2, width: Math.max(1, sw - (j ? 2 : 0)), height: bt, fill: c, rx: j === 2 ? 4 : 0 });
+      bindTip(r, v.toFixed(1) + '%', P.name + ' · ' + name); g.append(r);
+      if (sw > 38) g.append(T(x + sw / 2 + (j ? 1 : 0), y + (rh - 4) / 2 + 4, v.toFixed(1) + '%', { 'text-anchor': 'middle', fill: tc, 'font-weight': 700, 'font-size': 12, 'pointer-events': 'none' }));
+      x += sw;
+    });
+    s.append(g);
+  });
+}
+
+function drawBars(host, rows, o) {
+  // rows: [label, value, colorVar, tipBody]. 기둥 너비는 24px 로 고정
+  const { s, w, h } = chartBox(host);
+  const L = 12, R = 12, Tp = 22, B = 26, pw = w - L - R, ph = h - Tp - B, max = o.max, band = pw / rows.length;
+  s.append(sv('line', { x1: L, x2: w - R, y1: Tp + ph, y2: Tp + ph, stroke: css('--axis'), 'stroke-width': 1 }));
+  rows.forEach((r, i) => {
+    const cx = L + band * (i + .5), bh = Math.max(2, ph * r[1] / max), y = Tp + ph - bh;
+    const p = sv('path', { d: `M${cx - 12},${Tp + ph}V${y + 4}q0,-4 4,-4h16q4,0 4,4V${Tp + ph}Z`, fill: css(r[2]) });
+    bindTip(p, r[1] + o.unit, r[0] + (r[3] ? ' · ' + r[3] : '')); s.append(p);
+    s.append(T(cx, y - 6, r[1] + (o.unitShort || ''), { 'text-anchor': 'middle', fill: css('--ink'), 'font-weight': 700, 'font-size': 12 }));
+    s.append(T(cx, h - 8, r[0], { 'text-anchor': 'middle', 'font-size': 11 }));
+  });
+  return { s, L, band, Tp, ph, h };
+}
+function drawConf(thr) {
+  const rows = CONF.map(c => [c[0], c[1], c[2] >= thr && thr > 0 || thr === 0 ? '--m-gray' : '--m-light', (c[1] / 389 * 100).toFixed(1) + '% (389장 중)']);
+  const c = drawBars($('#c-conf'), rows, { max: 80, unit: '장', unitShort: '' });
+  if (thr > 0) {
+    const i = CONF.findIndex(r => r[2] >= thr), x = c.L + c.band * i;
+    c.s.append(sv('line', { x1: x, x2: x, y1: c.Tp - 14, y2: c.Tp + c.ph, stroke: css('--brand'), 'stroke-width': 2 }));
+    c.s.append(T(x + 7, c.Tp - 4, '자동 입력 기준 ' + thr + '  →  채움', { fill: css('--brand'), 'font-weight': 700, 'font-size': 12 }));
+    c.s.append(T(x - 7, c.Tp - 4, '빈칸', { 'text-anchor': 'end', 'font-weight': 700, 'font-size': 12 }));
+  }
+}
+function drawTime(limit) {
+  const rows = TIME.map((t, i) => [t[0], t[1], i === 5 ? '--brand' : '--m-gray', i === 5 ? (limit ? '기다리지 않고 빈칸' : '끝까지 기다림') : '']);
+  const c = drawBars($('#c-time'), rows, { max: 40, unit: '%', unitShort: '%' });
+  const x = c.L + c.band * 5;
+  c.s.append(sv('line', { x1: x, x2: x, y1: c.Tp - 14, y2: c.Tp + c.ph, stroke: css('--brand'), 'stroke-width': 2 }));
+  c.s.append(T(x - 7, c.Tp - 4, limit ? '10초 제한  →  빈칸' : '10초 (제한 끔)', { 'text-anchor': 'end', fill: css('--brand'), 'font-weight': 700, 'font-size': 12 }));
+}
+function drawDir() {
+  const { s, w, h } = chartBox($('#c-dir'));
+  const rh = (h - 4) / DIR.length, L = 4, bx = 96, bw = w - bx - 62, max = 25;
+  DIR.forEach((r, i) => {
+    const y = 2 + i * rh, by = y + 8, len = bw * r[2] / max, c = r[3] === 'r' ? css('--brand') : css('--m-gray');
+    s.append(T(L, by + 13, r[0], { 'font-size': 13, fill: css('--ink'), 'font-weight': 700 }));
+    const p = sv('path', { d: `M${bx},${by}h${len - 4}q4,0 4,4v10q0,4 -4,4h${-(len - 4)}Z`, fill: c }); bindTip(p, r[2] + '%', r[0] + ' · ' + r[1]); s.append(p);
+    s.append(T(bx + len + 8, by + 13, r[2] + '%', { 'font-size': 13, fill: css('--ink'), 'font-weight': 700 }));
+    s.append(T(bx, by + 35, r[1], { 'font-size': 11.5, fill: r[3] === 'r' ? css('--brand') : css('--mute'), 'font-weight': r[3] === 'r' ? 700 : 500 }));
+  });
+}
+
+/* ───────── 5. 비용 ───────── */
+function drawRoi() {
+  const { s, w, h } = chartBox($('#c-roi'));
+  const rows = [['사람이 30초 검토하는 비용', 86, 'g', '최저시급 기준'], ['손익분기 · 20개월 평균 (연 435건)', 780, 'r', '기존 서버의 여유분, 연 17만 원'], ['손익분기 · 조건 완화 뒤 (연 약 180건)', 1900, 'r', '기존 서버의 여유분, 연 17만 원']];
+  const rh = Math.min(96, (h - 6) / rows.length), bw = w - 110, max = 2000, top = (h - rh * rows.length) / 2;
+  rows.forEach((r, i) => {
+    const y = top + i * rh, by = y + 24, len = Math.max(8, bw * r[1] / max), c = r[2] === 'r' ? css('--brand') : css('--m-gray');
+    s.append(T(2, y + 15, r[0], { 'font-size': 12.5, fill: css('--ink'), 'font-weight': 700 }));
+    const p = sv('path', { d: `M2,${by}h${len - 4}q4,0 4,4v12q0,4 -4,4h${-(len - 4)}Z`, fill: c }); bindTip(p, '약 ' + fmt(r[1]) + '원', r[0] + ' · ' + r[3]); s.append(p);
+    s.append(T(len + 12, by + 15, '약 ' + fmt(r[1]) + '원', { 'font-size': 13, fill: css('--ink'), 'font-weight': 700 }));
+    if (i) s.append(T(len + 12, by + 31, '검토 비용의 ' + Math.round(r[1] / 86) + '배', { 'font-size': 11.5 }));
+  });
+}
+
+/* ───────── 4. 검토 큐 ───────── */
+const ST = { high: ['높음', '--crit'], mid: ['보통', '--warn'], low: ['낮음', '--good'] };
+const QUEUE = [
+  { p: 'high', t: '13:52', id: '000735', why: '입력값 ≠ 판독값', input: '2028-01-12', act: '판매자 재확인 요청', note: '확신도가 높은데 판매자가 1년 늦은 날짜로 고쳤다. 확대본을 다시 보여 주고 확인을 요청했다',
+    log: [['13:51:40', '날짜면 촬영, 원본 보존'], ['13:51:42', '판독 2027-01-12 · 확신도 0.98 · 2.0초'], ['13:51:42', '소비기한 칸 자동 입력'], ['13:52:05', '판매자 수정 → 2028-01-12'], ['13:52:06', '날짜 확대본 재확인 요청'], ['13:52:06', '검토 큐 등록 (높음)']] },
+  { p: 'mid', t: '13:41', id: '000159', why: '입력값 ≠ 판독값', input: '2027-01-08', act: '기록만 · 제재 없음', note: '모델이 일(日)을 01 로 잘못 읽었고 판매자가 08 로 바로잡았다. 수정의 대부분은 이런 오독 교정이다',
+    log: [['13:41:07', '날짜면 촬영, 원본 보존'], ['13:41:11', '판독 2027-01-01 · 확신도 0.95 · 4.4초'], ['13:41:11', '소비기한 칸 자동 입력'], ['13:41:31', '판매자 수정 → 2027-01-08'], ['13:41:33', '날짜 확대본 재확인, 판매자 확정'], ['13:41:40', '게시 · 수정값은 검수 뒤 학습 후보']] },
+  { p: 'mid', t: '13:30', id: '000007', why: '기한 경과', input: '2026-06-25', act: '게시 보류', note: '제조일(25.06.26)과 소비기한(26.06.25)을 모두 읽고 늦은 날짜를 골랐다. 판매자가 확인한 날짜가 오늘보다 이르다',
+    log: [['13:29:48', '날짜면 촬영, 원본 보존'], ['13:29:51', '판독 2026-06-25 · 확신도 0.78 · 2.8초'], ['13:29:51', '후보 2025-06-26 은 제조일로 판단'], ['13:30:02', '판매자 확인 (수정 없음)'], ['13:30:02', '기한 경과 안내, 게시 보류'], ['13:30:02', '이의 제기 때만 사람이 검토']] },
+  { p: 'low', t: '13:18', id: '000210', why: '최대 기한 초과', input: '2027-05-20', act: '빈칸 처리 후 게시', note: '2031 년으로 읽혔다. 확신도가 기준 미만이고 제품 유형의 최대 소비기한도 넘어 칸을 채우지 않았다',
+    log: [['13:17:20', '날짜면 촬영, 원본 보존'], ['13:17:22', '판독 2031-05-07 · 확신도 0.63 · 2.1초'], ['13:17:22', '기준 미만 + 최대 기한 초과 → 빈칸'], ['13:17:49', '판매자 입력 2027-05-20'], ['13:17:50', '판독값과 다름, 확대본 확인 뒤 확정'], ['13:17:58', '게시']] },
+  { p: 'low', t: '13:05', id: '000486', why: '날짜를 읽지 못함', input: '2027-07-15', act: '표시 후 게시', note: '10초 안에 읽지 못해 빈칸으로 두었다. 게시글에 "사진에서 날짜를 읽지 못함"을 표시한다',
+    log: [['13:04:31', '날짜면 촬영, 원본 보존'], ['13:04:41', '10초 제한 도달 → 빈칸'], ['13:05:10', '판매자 입력 2027-07-15'], ['13:05:10', '대조할 판독값 없음'], ['13:05:18', '게시 · "날짜를 읽지 못함" 표시']] },
+  { p: 'low', t: '12:47', id: '000413', why: '입력값 ≠ 판독값', input: '2027-04-28', act: '기록만 · 제재 없음', note: '확신도가 낮아 판독값을 보여 주지 않고 판매자가 먼저 입력했다. 두 값이 달라 확대본을 보여 줬다',
+    log: [['12:46:12', '날짜면 촬영, 원본 보존'], ['12:46:13', '판독 2027-04-23 · 확신도 0.58 · 1.1초'], ['12:46:13', '기준 미만 → 판독값 숨김, 빈칸'], ['12:46:40', '판매자 입력 2027-04-28'], ['12:46:41', '판독값과 다름, 확대본 표시'], ['12:46:55', '판매자 수정 → 2027-04-23, 게시']] },
+];
+function renderQueue() {
+  $('#qbody').replaceChildren(...QUEUE.map((q, i) => {
+    const P = PHOTO[q.id], st = ST[q.p];
+    const tr = el('tr', i === S.q ? { class: 'sel' } : {},
+      el('td', {}, el('span', { class: 'chip' }, el('i', { style: `background:var(${st[1]})` }), st[0])),
+      el('td', { class: 'num', text: q.t }), el('td', {}, el('b', { text: P.title })), el('td', { text: q.why }),
+      el('td', { class: 'num', text: P.read || '—' }), el('td', { class: 'num', text: P.conf ? P.conf.toFixed(2) : '—' }),
+      el('td', { class: 'num', text: q.input }), el('td', { text: q.act }));
+    tr.onclick = () => { S.q = i; go(); }; return tr;
+  }));
+  const q = QUEUE[S.q], P = PHOTO[q.id];
+  $('#qdetail').replaceChildren(
+    el('h3', { text: P.title + ' · ' + q.why }),
+    el('div', { class: 'sub', text: '날짜 확대본 (판매자가 찍은 사진에서 자동으로 잘라냄)' }),
+    el('img', { class: 'zoom', src: img(q.id, 1), style: 'height:150px' }),
+    el('div', { class: 'cmp' }, el('div', {}, el('div', { class: 'l', text: '사진에서 읽은 날짜' + (P.conf ? ' · 확신도 ' + P.conf.toFixed(2) : '') }), el('div', { class: 'v num', text: P.read || '읽지 못함' })),
+      el('div', {}, el('div', { class: 'l', text: '판매자가 넣은 날짜' }), el('div', { class: 'v num red', text: q.input }))),
+    el('div', { class: 'note', text: q.note }),
+    el('h3', { text: '기록', style: 'margin-top:2px' }),
+    el('ul', { class: 'log' }, q.log.map(l => el('li', {}, el('time', { text: l[0] }), el('span', { text: l[1] })))),
+    el('div', { class: 'sub', style: 'margin-top:auto', text: '모델 v2026.09.28 · 서버 CPU 4코어 · 외부 전송 없음' }));
+}
+
+/* ───────── 2. 판매자 화면 ───────── */
+const CASES = {
+  A: { id: '000735', name: '확신할 때', sub: '자동 입력', strip: ['확신도 0.98, 2.0초. ', '판매자는 확인만 누른다'] },
+  B: { id: '000413', name: '확신이 낮을 때', sub: '숨기고 대조', strip: ['확신도 0.58. 읽은 값을 보여 주지 않고 ', '판매자 입력과 대조한다'] },
+  C: { id: '000159', name: '틀리게 읽었을 때', sub: '판매자가 고침', strip: ['확신도 0.95 인데 일(日)을 잘못 읽었다. ', '확대본을 보고 고치면 끝난다'] },
+  D: { id: '000007', name: '기한이 지났을 때', sub: '게시 보류', strip: ['두 날짜 중 늦은 날짜를 소비기한으로 골랐다. ', '판정은 판매자가 확인한 날짜로 한다'] },
+  E: { id: '000486', name: '못 읽었을 때', sub: '빈칸', strip: ['날짜를 지어내지 않는다. ', '빈칸이면 지금처럼 손으로 넣는다'] },
+};
+const STEPS = ['날짜면 촬영', '판독', '판매자 확인', '게시글'];
+function sellerModel() {
+  const c = S.caseId, P = PHOTO[CASES[c].id], id = CASES[c].id;
+  const m = { P, id, filled: null, note: '', final: null, held: false, exp: [], log: [['14:02:10', '날짜면 촬영, 원본 보존']] };
+  if (c === 'A') { m.filled = P.read; m.final = P.read; m.log.push(['14:02:12', `판독 ${P.read} · 확신도 0.98 · 2.0초`], ['14:02:12', '소비기한 칸 자동 입력'], ['14:02:20', '판매자 확인 (수정 없음)'], ['14:02:31', '게시']); }
+  if (c === 'B') { m.final = P.read; m.typed = P.read; m.log.push(['14:02:11', `판독 ${P.read} · 확신도 0.58 · 1.1초`], ['14:02:11', '기준 미만 → 판독값 숨김, 빈칸'], ['14:02:38', `판매자 입력 ${P.read}`], ['14:02:38', '숨겨 둔 판독값과 일치'], ['14:02:45', '게시']); }
+  if (c === 'C') { m.filled = P.read; m.final = P.truth; m.typed = P.truth; m.log.push(['14:02:14', `판독 ${P.read} · 확신도 0.95 · 4.4초`], ['14:02:14', '소비기한 칸 자동 입력'], ['14:02:33', `판매자 수정 → ${P.truth}`], ['14:02:35', '날짜 확대본 재확인, 판매자 확정'], ['14:02:44', '게시 · 검토 큐 등록 (보통)']); }
+  if (c === 'D') { m.filled = P.read; m.final = P.read; m.held = true; m.log.push(['14:02:13', `판독 ${P.read} · 확신도 0.78 · 2.8초`], ['14:02:13', '후보 2025-06-26 은 제조일로 판단'], ['14:02:13', '소비기한 칸 자동 입력'], ['14:02:24', '판매자 확인 (수정 없음)'], ['14:02:24', '기한 경과 안내, 게시 보류']); }
+  if (c === 'E') { m.final = P.truth; m.typed = P.truth; m.unread = true; m.log.push(['14:02:20', '10초 제한 도달 → 빈칸'], ['14:02:51', `판매자 입력 ${P.truth}`], ['14:02:51', '대조할 판독값 없음'], ['14:02:58', '게시 · "날짜를 읽지 못함" 표시']); }
+  return m;
+}
+const zoomBox = id => el('div', {}, el('div', { class: 'l', style: 'font-size:11px;color:var(--mute);margin-bottom:4px', text: '날짜 확대본' }), el('img', { class: 'zoom', src: img(id, 1), style: 'height:96px' }));
+function renderSeller() {
+  const c = S.caseId, m = sellerModel(), P = m.P, st = S.step;
+  $('#cases').replaceChildren(...Object.keys(CASES).map(k => { const b = el('button', k === c ? { class: 'on' } : {}, el('b', { text: CASES[k].name }), CASES[k].sub); b.onclick = () => { S.caseId = k; S.step = 1; go(); }; return b; }));
+  $('#steps').replaceChildren(...STEPS.flatMap((n, i) => { const b = el('button', i + 1 === st ? { class: 'on' } : {}, el('span', { class: 'n', text: i + 1 }), n); b.onclick = () => { S.step = i + 1; go(); }; return i ? [el('span', { class: 'ar', text: '▶' }), b] : [b]; }));
+  $('#sstrip').replaceChildren(document.createTextNode(CASES[c].strip[0]), el('b', { text: CASES[c].strip[1] }));
+  $('#slog').replaceChildren(...m.log.slice(0, st === 1 ? 1 : st === 2 ? (c === 'D' ? 4 : c === 'E' ? 2 : 3) : st === 3 ? m.log.length - 1 : m.log.length).map(l => el('li', {}, el('time', { text: l[0] }), el('span', { text: l[1] }))));
+
+  const scr = $('#scr'), top = [el('div', { class: 'sbar' }, el('span', { text: '14:02' }), el('span', { text: 'LTE ▮▮▮' }))];
+  const field = (val, o) => el('div', { class: 'fld date' + (val ? '' : ' empty') }, el('div', { class: 'l', text: '소비기한' }), el('div', { class: 'v' }, val ? el('span', { class: 'num', text: val }) : el('span', { class: 'ph', text: '직접 입력해 주세요' }), o && o.tag ? el('span', { class: 'tag real', text: o.tag }) : null));
+  const form = (...x) => [el('div', { class: 'tbar' }, el('span', { text: '닫기' }), '내 물건 팔기'), el('div', { class: 'sbody' },
+    el('div', { style: 'display:flex;gap:8px' }, el('img', { src: img(m.id), style: 'width:64px;height:64px;object-fit:cover;border-radius:8px' }), el('div', { style: 'width:64px;height:64px;border-radius:8px;border:1px dashed var(--axis);display:grid;place-items:center;color:var(--mute);font-size:11px', text: '+ 사진' })),
+    el('div', { class: 'fld' }, el('div', { class: 'l', text: '제목' }), el('div', { class: 'v', text: P.title })),
+    el('div', { class: 'fld' }, el('div', { class: 'l', text: '가격' }), el('div', { class: 'v', text: P.price })), ...x)];
+  let body, exp;
+  if (st === 1) {
+    const g = el('div', { class: 'guide', id: 'guide' });
+    body = [el('div', { class: 'cam' }, el('img', { src: img(m.id) }), g, el('div', { class: 'msg', text: '날짜가 보이는 면을 찍어 주세요' })), el('div', { class: 'shut' }, el('i'))];
+    exp = ['촬영', ['카테고리를 고르면 <b>날짜면 촬영</b>이 글쓰기의 한 단계로 들어간다', '해상도와 흐림을 바로 검사해, 모자라면 그 자리에서 다시 찍게 한다', '판매자가 제목과 가격을 쓰는 동안 <b>서버가 사진을 읽는다</b>', '사진은 플랫폼 서버 안에서만 처리한다. 외부 API 를 쓰지 않는다']];
+  } else if (st === 2) {
+    if (m.filled) { body = form(field(m.filled, { tag: '사진에서 읽음' }), zoomBox(m.id), el('div', { class: 'btns' }, el('span', { text: '고칠게요' }), el('span', { class: 'p', text: '맞아요' })));
+      exp = ['판독 · 자동 입력', [`확신도 <b>${P.conf.toFixed(2)}</b>, ${P.sec.toFixed(1)}초. 기준(0.7 이상, 10초 안)을 넘어 <b>칸을 채웠다</b>`, c === 'D' ? '제조일 25.06.26 과 소비기한 26.06.25 를 모두 읽고 <b>늦은 날짜</b>를 골랐다' : '품목보고번호·바코드 같은 긴 숫자는 날짜로 읽지 않는다', '채운 값 옆에 <b>날짜 확대본</b>을 붙여, 보지 않고 확인을 누르는 것을 줄인다', '이 기준에서 자동 입력은 40.6%, 틀린 값을 받는 판매자는 8.2% 다']]; }
+    else { body = form(field(null), el('div', { class: 'note', text: m.unread ? '10초 안에 날짜를 읽지 못했어요. 포장에 적힌 소비기한을 직접 입력해 주세요.' : '포장에 적힌 소비기한을 직접 입력해 주세요.' }));
+      exp = ['판독 · 빈칸', m.unread ? [`${P.sec.toFixed(1)}초가 걸려도 읽지 못한 사진이다. <b>10초에서 끊고 빈칸</b>으로 둔다`, '날짜를 지어내지 않는다. 자주 나오는 날짜로 찍지도 않는다', '빈칸이면 지금처럼 손으로 넣으므로 <b>지금보다 나빠지지 않는다</b>', '10초를 넘긴 사진 123장 중 맞힌 것은 13장뿐이었다'] : [`읽기는 했지만 확신도가 <b>${P.conf.toFixed(2)}</b> 로 기준 0.7 에 못 미친다`, '<b>읽은 값을 보여 주지 않는다.</b> 보여 주면 판매자가 그대로 따라 적는다', '판매자가 먼저 입력하게 하고, 숨겨 둔 판독값과 대조한다', '채워 준 값을 같은 사람이 확인하는 것만으로는 검증이 아니기 때문이다']]; }
+  } else if (st === 3) {
+    if (c === 'A') { body = form(field(m.final, { tag: '확인함' }), zoomBox(m.id), el('div', { class: 'note', text: `소비기한까지 ${daysLeft(m.final)}일 남았어요.` }), el('div', { class: 'btns' }, el('span', { class: 'p', text: '작성 완료' })));
+      exp = ['판매자 확인', ['판매자가 확대본과 채워진 값을 비교하고 <b>확인</b>을 눌렀다', '남은 일수는 확인된 날짜로 계산한다', '판독값과 입력값이 같으므로 검토 큐에 올라가지 않는다']]; }
+    if (c === 'B') { body = form(field(m.typed, { tag: '사진과 같음' }), zoomBox(m.id), el('div', { class: 'note', text: '입력한 날짜가 사진에서 읽은 날짜와 같아요.' }), el('div', { class: 'btns' }, el('span', { class: 'p', text: '작성 완료' })));
+      exp = ['판매자 확인 · 대조', ['판매자가 넣은 값과 숨겨 둔 판독값이 <b>일치</b>했다', '두 값은 서로 독립이다. 틀린 입력이 판독값과 우연히 같을 확률은 <b>0.2%</b>', '다르면 확대본을 보여 주고 한 번 더 확인하게 한다']]; }
+    if (c === 'C') { body = form(field(m.typed, { tag: '직접 고침' }), zoomBox(m.id), el('div', { class: 'note alert', text: `사진에서 읽은 날짜(${P.read})와 달라요. 확대본을 보고 한 번 더 확인해 주세요.` }), el('div', { class: 'btns' }, el('span', { text: '다시 찍기' }), el('span', { class: 'p', text: `${m.typed} 이 맞아요` })));
+      exp = ['판매자 확인 · 수정', [`모델은 ${P.read}, 판매자는 <b>${m.typed}</b>. 실제 날짜는 판매자 쪽이 맞다`, '값이 다르면 확대본을 <b>한 번 더</b> 보여 준다', '<b>수정만으로 제재하지 않는다.</b> 채운 값의 약 20% 는 모델의 오독이다', '판독값과 입력값을 둘 다 기록하고, 검수한 수정값은 학습 데이터가 된다']]; }
+    if (c === 'D') { body = form(field(m.final, { tag: '확인함' }), zoomBox(m.id), el('div', { class: 'note alert', text: '소비기한이 지난 식품은 거래할 수 없어요. 날짜가 잘못 읽혔다면 고치거나 다시 찍어 주세요.' }), el('div', { class: 'btns' }, el('span', { text: '날짜 고치기' }), el('span', { text: '다시 찍기' })));
+      exp = ['판매자 확인 · 기한 경과', [`판매자가 확인한 날짜가 오늘보다 <b>${-daysLeft(m.final)}일</b> 이르다`, '판정은 <b>판매자가 확인한 날짜</b>로 한다. 판독값만으로는 막지 않는다', '판독값만으로 막으면 계산상 기한이 남은 글의 약 11% 를 잘못 막는다', '잘못 읽힌 경우를 위해 고치기와 다시 찍기를 함께 보여 준다']]; }
+    if (c === 'E') { body = form(field(m.typed, { tag: '직접 입력' }), zoomBox(m.id), el('div', { class: 'note', text: '사진에서 날짜를 읽지 못해 입력한 값을 그대로 씁니다. 게시글에 표시돼요.' }), el('div', { class: 'btns' }, el('span', { text: '다시 찍기' }), el('span', { class: 'p', text: '작성 완료' })));
+      exp = ['판매자 확인 · 직접 입력', ['대조할 판독값이 없다. 판매자 입력을 그대로 쓴다', '대신 게시글에 <b>"사진에서 날짜를 읽지 못함"</b>을 표시한다', '날짜면 원본은 그대로 붙으므로 구매자가 직접 볼 수 있다']]; }
+  } else {
+    if (m.held) { body = [el('div', { class: 'tbar' }, '게시 보류'), el('div', { class: 'sbody', style: 'justify-content:center;text-align:center;gap:14px' }, el('div', { style: 'font-size:40px;color:var(--brand)', text: '!' }), el('div', { style: 'font-size:17px;font-weight:700', text: '이 글은 아직 게시되지 않았어요' }), el('div', { class: 'note alert', style: 'text-align:left', text: `확인한 소비기한 ${m.final} 이 오늘(2026-09-29)보다 이릅니다. 소비기한이 지난 식품은 거래할 수 없습니다.` }), zoomBox(m.id), el('div', { class: 'btns' }, el('span', { text: '이의 제기' }), el('span', { class: 'p', text: '날짜 고치기' })))];
+      exp = ['게시 보류', ['자동 삭제가 아니라 <b>보류와 안내</b>다', '이의 제기가 들어온 글만 사람이 본다', '원본 사진과 판독 기록이 남아 있어 검토에 시간이 들지 않는다']]; }
+    else { const dl = daysLeft(m.final);
+      body = [el('div', { class: 'tbar' }, el('span', { text: '‹' }), '게시글'), el('div', { class: 'post', style: 'flex:1;overflow:hidden;display:flex;flex-direction:column' }, el('img', { class: 'main', src: img(m.id) }), el('div', { class: 'sbody' },
+        el('div', {}, el('div', { style: 'font-size:16.5px;font-weight:700', text: P.title }), el('div', { style: 'font-size:12px;color:var(--mute);margin-top:2px', text: '식품 · 방금 전' }), el('div', { style: 'font-size:18px;font-weight:700;margin-top:6px', text: P.price })),
+        el('div', { class: 'dbox' }, el('img', { src: img(m.id, 1) }), el('div', {}, el('div', { class: 'dv num' }, m.final + ' · ', el('span', { class: 'red', text: dl + '일 남음' })), el('div', { class: 'dl', html: m.unread ? '판매자가 입력한 날짜<br>사진에서 날짜를 읽지 못함 · 날짜면 원본 보기' : '판매자 사진에서 읽은 날짜<br>날짜면 원본 보기' }))),
+        el('div', { style: 'font-size:12.5px;color:var(--ink2);line-height:1.55', text: '선물 받았는데 먹지 않아 내놓습니다. 미개봉이고 실온 보관했습니다.' })))];
+      exp = ['게시글', ['구매자는 <b>날짜, 남은 일수, 날짜면 원본</b>을 함께 본다', "'확인됨' 같은 보증 표시는 붙이지 않는다. 조작된 날짜에 신뢰를 빌려주기 때문이다", c === 'C' ? '판독값과 입력값이 달랐으므로 검토 큐에 <b>우선순위 신호</b>로 올라간다' : m.unread ? '읽지 못했다는 사실도 숨기지 않고 표시한다' : '원본·촬영 시각·수정 이력은 신고가 들어오면 근거가 된다']]; }
+  }
+  scr.replaceChildren(...top, ...body);
+  if (st === 1) { // 사진(3:4)을 화면에 꽉 채워 잘라 보여 주므로, 날짜 상자 위치를 잘린 만큼 옮긴다
+    const cam = $('.cam', scr), W = cam.clientWidth, H = cam.clientHeight, k = Math.max(W / 3, H / 4), iw = 3 * k, ih = 4 * k, ox = (W - iw) / 2, oy = (H - ih) / 2, b = P.box, pad = 10;
+    Object.assign($('#guide').style, { left: ox + iw * b[0] / 100 - pad + 'px', top: oy + ih * b[1] / 100 - pad + 'px', width: iw * b[2] / 100 + pad * 2 + 'px', height: ih * b[3] / 100 + pad * 2 + 'px' });
+  }
+  $('#exp').replaceChildren(el('h4', { text: st + '. ' + exp[0] }), el('ul', {}, exp[1].map(t => el('li', { html: t }))));
+}
+let timer = null;
+$('#play').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $('#play').textContent = '▶ 자동 재생'; return; }
+  $('#play').textContent = '■ 멈춤'; const ks = Object.keys(CASES);
+  timer = setInterval(() => { if (S.step < 4) S.step++; else { S.step = 1; S.caseId = ks[(ks.indexOf(S.caseId) + 1) % ks.length]; } go(); }, 2600);
+};
+
+/* ───────── 화면 전환 ─────────  주소 예: #ops/c09/d30  #seller/C/3  #queue/2 */
+function go(skipHash) {
+  if (!skipHash) { const h = S.page === 'ops' ? `ops/${S.policy}/${S.period}` : S.page === 'seller' ? `seller/${S.caseId}/${S.step}` : S.page === 'queue' ? `queue/${S.q}` : S.page; history.replaceState(null, '', '#' + h); }
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + S.page));
+  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('on', a.dataset.p === S.page));
+  if (S.page === 'ops') renderOps(); if (S.page === 'queue') renderQueue(); if (S.page === 'seller') renderSeller(); if (S.page === 'cost') drawRoi();
+}
+function fromHash() {
+  const a = (location.hash || '#strategy').slice(1).split('/');
+  if (['strategy', 'seller', 'ops', 'queue', 'cost'].includes(a[0])) S.page = a[0];
+  if (S.page === 'ops') { if (POLICY[a[1]]) S.policy = a[1]; if (PERIOD[a[2]]) S.period = a[2]; }
+  if (S.page === 'seller') { if (CASES[a[1]]) S.caseId = a[1]; if (+a[2] >= 1 && +a[2] <= 4) S.step = +a[2]; }
+  if (S.page === 'queue' && QUEUE[+a[1]]) S.q = +a[1];
+  go(true);
+}
+document.querySelectorAll('.nav a').forEach(a => a.onclick = e => { e.preventDefault(); S.page = a.dataset.p; go(); });
+addEventListener('hashchange', fromHash);
+function fit() { const st = $('#stage'), k = Math.min(innerWidth / 1600, innerHeight / 900); st.style.transform = `scale(${k})`; st.style.left = (innerWidth - 1600 * k) / 2 + 'px'; st.style.top = (innerHeight - 900 * k) / 2 + 'px'; }
+addEventListener('resize', fit); fit();
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(fromHash); fromHash();
+</script>
+</body>
+</html>
