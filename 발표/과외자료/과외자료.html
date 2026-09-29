@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>[CODE]_서브웨이 프로젝트 과외 자료</title>
+<style>
+  @page { size: A4 landscape; margin: 11mm 13mm; }
+  :root { --red: #8B0000; --ink: #1A1A1A; --mute: #666; --line: #D9D9D9; --card: #F3F3F3; --pink: #F6E3E3; --dark: #3A3A3A; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Pretendard", "Malgun Gothic", sans-serif; font-weight: 500; color: var(--ink); font-size: 15.9px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { height: 187mm; page-break-after: always; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
+  .page:last-child { page-break-after: auto; }
+  h1 { font-size: 26.7px; font-weight: 700; display: flex; align-items: center; gap: 10px; padding-bottom: 7px; border-bottom: 1.5px solid var(--line); }
+  h1:before { content: ""; width: 6px; height: 24px; background: var(--red); }
+  h1 em { font-style: normal; color: var(--red); }
+  h1 span { margin-left: auto; font-size: 14.0px; font-weight: 500; color: var(--mute); }
+  h2 { font-size: 17.8px; font-weight: 700; margin-bottom: 4px; }
+  b, strong { font-weight: 700; }
+  .r { color: var(--red); font-weight: 700; }
+  .m { color: var(--mute); }
+  .s { font-size: 14.0px; }
+  .cols { display: grid; gap: 10px; }
+  .c2 { grid-template-columns: 1fr 1fr; } .c3 { grid-template-columns: 1fr 1fr 1fr; } .c4 { grid-template-columns: repeat(4, 1fr); }
+  .c32 { grid-template-columns: 3fr 2fr; } .c23 { grid-template-columns: 2fr 3fr; }
+  .card { background: var(--card); border-radius: 9px; padding: 10px 13px; }
+  .card.w { background: #fff; border: 1.5px solid var(--line); }
+  .card.p { background: var(--pink); }
+  .big { font-size: 34.3px; font-weight: 800; color: var(--red); line-height: 1.15; }
+  .strip { background: var(--card); border-radius: 9px; padding: 8px 14px; text-align: center; font-weight: 700; font-size: 16.5px; margin-top: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.6px; }
+  th { background: var(--dark); color: #fff; font-weight: 700; text-align: left; padding: 5px 9px; }
+  td { border: 1px solid #B5B5B5; padding: 5px 9px; vertical-align: middle; }
+  tr.hl td { background: var(--pink); }
+  ul { padding-left: 17px; } li { margin: 2px 0; }
+  .say { border-left: 4px solid var(--red); background: #FFF8F8; padding: 7px 12px; border-radius: 0 8px 8px 0; font-size: 15.2px; }
+  .say b { color: var(--red); }
+
+  /* 표지 */
+  .cover { background: var(--red); color: #fff; border-radius: 12px; padding: 30px 38px; flex: 1; display: flex; flex-direction: column; }
+  .cover .t { font-size: 43.2px; font-weight: 800; line-height: 1.25; border-left: 7px solid #fff; padding-left: 16px; }
+  .cover .st { font-size: 19.1px; margin-top: 12px; padding-left: 23px; font-weight: 500; }
+  .cover .box { margin-top: auto; display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; }
+  .cover .box > div { background: rgba(255,255,255,.13); border-radius: 10px; padding: 13px 16px; font-size: 15.9px; }
+  .cover .box h2 { font-size: 17.8px; }
+  .cover ol { padding-left: 18px; } .cover li { margin: 1px 0; }
+
+  /* 구조도 */
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .node { flex: 1; border-radius: 8px; padding: 9px 8px; color: #fff; background: var(--dark); text-align: center; display: flex; flex-direction: column; justify-content: center; min-height: 104px; }
+  .node.ai { background: var(--red); }
+  .node.out { background: #fff; color: var(--ink); border: 2px solid var(--dark); }
+  .node.cond { background: #fff; color: var(--ink); border: 2px dashed var(--red); }
+  .node.none { background: #fff; color: var(--red); border: 2px solid var(--red); }
+  .node .n { font-size: 15.9px; font-weight: 700; }
+  .node .d { font-size: 13.1px; line-height: 1.35; margin-top: 2px; font-weight: 500; }
+  .arr { width: 20px; display: flex; align-items: center; justify-content: center; color: var(--mute); font-size: 15.2px; flex: none; }
+  .lane { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px 10px; }
+  .lane .lt { font-size: 15.2px; font-weight: 700; margin-bottom: 6px; }
+  .lane .lt span { font-weight: 500; color: var(--mute); margin-left: 6px; }
+  .legend { display: flex; gap: 16px; font-size: 14.0px; color: var(--mute); }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .guard { background: var(--pink); border-radius: 10px; padding: 8px 12px; font-size: 14.6px; }
+
+  .phones { display: flex; gap: 10px; align-items: flex-start; }
+  .phones figure { flex: 1; text-align: center; }
+  .phones img { width: 100%; display: block; }
+  .phones figcaption { font-size: 14.0px; font-weight: 700; margin-top: 3px; }
+  img.demo { width: 100%; border-radius: 6px; border: 1px solid var(--line); display: block; }
+  .bar { display: flex; align-items: center; gap: 8px; font-size: 14.6px; margin: 3px 0; }
+  .bar .nm { width: 150px; } .bar .tr { flex: 1; height: 16px; background: #E6E6E6; border-radius: 7px; overflow: hidden; } .bar .tr i { display: block; height: 100%; }
+  .bar .v { width: 58px; text-align: right; font-weight: 700; }
+  .hist { display: flex; align-items: flex-end; gap: 5px; height: 200px; padding-top: 20px; }
+  .hist div { flex: 1; background: #B9B9B9; border-radius: 3px 3px 0 0; position: relative; }
+  .hist div b { position: absolute; top: -19px; left: 0; right: 0; text-align: center; font-size: 12.7px; }
+  .hist div.k { background: #5A5A5A; } .hist div.f { background: var(--red); }
+  .histl { display: flex; gap: 5px; font-size: 11.8px; color: var(--mute); text-align: center; line-height: 1.2; margin-top: 3px; }
+  .histl span { flex: 1; }
+  .no { display: inline-flex; width: 1.35em; height: 1.35em; border-radius: 50%; background: var(--red); color: #fff; align-items: center; justify-content: center; font-size: .8em; font-weight: 700; margin-right: .3em; vertical-align: .08em; }
+  .node.ai .no, .node .no.w { background: #fff; color: var(--red); }
+  h1 .no { background: var(--ink); }
+  .page.tight { font-size: 13.6px; gap: 7px; } .page.tight table { font-size: 12.6px; } .page.tight th, .page.tight td { padding: 3.5px 8px; } .page.tight h2 { font-size: 16px; margin-bottom: 3px; } .page.tight .card { padding: 8px 12px; }
+  .node .d { font-size: 12px !important; }
+</style>
+</head>
+<body>
+
+<!-- 1 -->
+<section class="page">
+  <div class="cover">
+    <div class="t">소비기한 OCR 프로젝트<br>한 번에 이해하기</div>
+    <div class="st">제3회 ITDA 연합학술제 본선 · [CODE]_서브웨이 · 발표자 과외 자료 (2026-09-29 기준)</div>
+    <div class="box">
+      <div>
+        <h2>30초 요약 — 이것만은 외우기</h2>
+        <ol>
+          <li>상품 사진에서 <b>소비기한 날짜를 읽는 프로그램</b>을 만들었다. GPU 없는 컴퓨터에서 장당 3초 안팎, 대회 사진 기준 <b>86.2%</b>.</li>
+          <li>이걸 <b>중고거래 앱의 식품·건강기능식품 게시글</b>에 붙인다. 판매자가 날짜를 찍으면 확신할 때만 소비기한 칸을 채워 준다.</li>
+          <li>핵심은 <b>확신이 없으면 "못 읽었다"고 말하는 것</b>. 틀린 날짜를 지어내지 않으니, 못 읽으면 판매자가 손으로 쓰면 된다.</li>
+        </ol>
+      </div>
+      <div>
+        <h2>차례</h2>
+        <ol>
+          <li>대회 조건과 배점</li><li>기술 아키텍처 구조도</li><li>단계별로 하는 일</li><li>소비기한을 고르는 규칙 · 병기 처리</li>
+          <li>모델 선정 과정</li><li>검증 방법과 버린 것</li><li>성능과 속도</li><li>도메인 1 : 문제와 근거</li>
+          <li>도메인 2 : 서비스 흐름</li><li>도메인 3 : 설계 이유 · 비용 · 도입 이유</li><li>외울 숫자 · 용어</li><li>예상 질문과 발표 흐름</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="page">
+  <h1>1. 대회 조건 : <em>제약이 설계를 결정했다</em><span>발표 슬라이드 3번</span></h1>
+  <div class="cols c3">
+    <div class="card"><div class="big">3,352장</div><b>정답이 없다</b><div class="m s">사진만 받았다. 정확도를 재려면 정답(라벨)을 우리가 직접 달아야 했다.</div></div>
+    <div class="card"><div class="big">4코어 CPU</div><b>GPU 없음 · 인터넷 차단</b><div class="m s">무거운 AI 모델이나 ChatGPT 같은 외부 서비스를 쓸 수 없다. RAM 8GB.</div></div>
+    <div class="card"><div class="big">2,500초</div><b>500장 제한 시간 (약 41분)</b><div class="m s">넘기면 결과 파일이 안 나와 0점. 장당 5초가 상한이다.</div></div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <h2>과제</h2>
+      <ul>
+        <li>사진마다 소비기한을 <b>2026-07-02</b> 형식으로 뽑는다.</li>
+        <li>못 읽은 칸은 <b>NONE</b>. 연도만 안 보이면 <b>NONE-10-14</b> 처럼 그 칸만.</li>
+        <li>제조일자만 있는 사진은 정답이 NONE (운영진 확정).</li>
+        <li>예선 8팀 통과 → 본선은 <b>고도화 + 도메인 기획 + 발표</b>.</li>
+      </ul>
+      <h2 style="margin-top:8px">일정</h2>
+      <ul>
+        <li>9/14 예선 제출 (84.2%) → 본선 진출</li>
+        <li>9/29 중간 제출 · <b>10/2 (금) 23:59 최종 제출</b></li>
+        <li><b>10/3 (토) 14:00 발표</b>, 인하대 6호관(경영대학) 220호. 발표 10분 + 질의응답 5분</li>
+        <li>운영진 노트북에서 <b>PDF 로 상영</b>. 개인 노트북 연결 불가 → 라이브 시연 없음</li>
+      </ul>
+    </div>
+    <div>
+      <h2>본선 배점 (100점, 전부 심사위원 평가)</h2>
+      <table>
+        <tr><th>항목</th><th>배점</th><th>우리 슬라이드</th></tr>
+        <tr><td>설계 사고 및 논리성</td><td><b>25</b></td><td>3, 5, 7, 8</td></tr>
+        <tr><td>소비기한 식별력 · 정확성</td><td><b>20</b></td><td>9, 11, 14</td></tr>
+        <tr><td>속도 및 효율 검증</td><td><b>15</b></td><td>13</td></tr>
+        <tr><td>후처리 및 모델 선택 근거</td><td><b>15</b></td><td>9, 12</td></tr>
+        <tr><td>도메인 활용 · 운영 · 비용 기획</td><td><b>15</b></td><td>16, 17, 19</td></tr>
+        <tr><td>발표 및 전달력</td><td><b>10</b></td><td>전체</td></tr>
+      </table>
+      <div class="m s" style="margin-top:5px">심사위원 : 컴퓨터비전 교수 · 스마트 제조·물류 교수 · 화학 기업 GMP 출하 표시물 자동화 담당</div>
+    </div>
+  </div>
+  <div class="strip">첫 구성은 500장에 2,905초로 이미 탈락이었다. 그래서 정확도보다 <span class="r">"끝까지 돌아가는가"</span> 부터 풀었다</div>
+</section>
+
+<!-- 3 -->
+<section class="page">
+  <h1>2. 기술 아키텍처 구조도 : <em>쉬운 사진은 한 번에, 어려운 사진에만 비용을</em><span>본선 최종 구성 · 슬라이드 7번</span></h1>
+  <div class="lane">
+    <div class="lt">기본 경로 <span>모든 사진이 지나간다. 사진의 88% 는 여기서 1.8초에 끝난다</span></div>
+    <div class="flow">
+      <div class="node"><div class="n">입력</div><div class="d">방향 보정<br>640px 로 축소</div></div><div class="arr">▶</div>
+      <div class="node ai"><div class="n"><span class="no">1</span>탐지</div><div class="d">글자 위치 찾기<br>PP-OCRv5 det · 5MB</div></div><div class="arr">▶</div>
+      <div class="node ai"><div class="n"><span class="no">2</span>인식</div><div class="d">큰 글자부터 읽기<br>PP-OCRv5 rec · 8MB</div></div><div class="arr">▶</div>
+      <div class="node cond"><div class="n"><span class="no">3</span>주변 재탐지</div><div class="d">옆에 숫자 줄이<br>있을 때만, 원본으로</div></div><div class="arr">▶</div>
+      <div class="node"><div class="n"><span class="no">4</span>다시 읽기</div><div class="d">날짜 줄만 원본으로<br>다시 읽고 투표</div></div><div class="arr">▶</div>
+      <div class="node"><div class="n"><span class="no">5</span>규칙 해석</div><div class="d">다른 숫자 제거<br>가장 늦은 날짜 선택</div></div><div class="arr">▶</div>
+      <div class="node out"><div class="n">출력</div><div class="d">2026-07-02<br>또는 NONE</div></div>
+    </div>
+  </div>
+  <div class="lane">
+    <div class="lt">예비 경로 <span>날짜 후보가 하나도 없는 사진(약 12%)만 차례로 시도한다. 읽히면 바로 <span class="no">4</span><span class="no">5</span>로 간다</span></div>
+    <div class="flow">
+      <div class="node cond"><div class="n">1,024px 로 다시</div><div class="d">축소를 덜 해서<br>한 번 더 읽기</div></div><div class="arr">▶</div>
+      <div class="node cond"><div class="n">도트 전처리</div><div class="d">점으로 찍힌 글씨의<br>점을 이어 붙임</div></div><div class="arr">▶</div>
+      <div class="node cond" style="border-style:solid"><div class="n" style="color:var(--red)">파인튜닝 인식기</div><div class="d">우리 라벨로 학습한<br>인식기로 읽기 · 8MB</div></div><div class="arr">▶</div>
+      <div class="node cond"><div class="n">2배 확대</div><div class="d">작은 사진만<br>키워서 읽기</div></div><div class="arr">▶</div>
+      <div class="node none"><div class="n">NONE</div><div class="d">그래도 없으면<br>날짜를 지어내지 않는다</div></div>
+    </div>
+  </div>
+  <div class="cols c32">
+    <div class="guard"><b class="r">시간 예산 가드</b> — 전체를 지켜본다. 최근 20장의 속도로 총 소요 시간을 예측해서 2,000초를 넘길 것 같으면 <b>1단계</b> 예비 경로 생략 → <b>2단계</b> 다시 읽기 생략 → <b>3단계</b> 남은 사진은 NONE. 어떤 컴퓨터에서든 결과 파일은 반드시 나온다. 9/28 에 PC 가 절전에 들어갔을 때 실제로 발동했다.</div>
+    <div>
+      <div class="legend" style="flex-wrap:wrap; gap:6px 16px">
+        <span><i style="background:var(--red)"></i>AI 모델 (공개 사전학습)</span>
+        <span><i style="background:var(--dark)"></i>우리가 짠 규칙·로직</span>
+        <span><i style="border:2px dashed var(--red)"></i>조건이 맞을 때만</span>
+      </div>
+      <div class="s m" style="margin-top:5px">모델 전체 21MB (탐지 5 + 인식 8 + 파인튜닝 인식 8). 실행 파일은 <b>predict.ipynb</b> 하나. 한국어 인식기로 한 번 더 읽는 단계는 시간 여유를 위해 기본으로 꺼 두었다.</div>
+    </div>
+  </div>
+  <div class="strip">AI 는 <span class="r">"읽기"</span> 만 하고, 어느 숫자가 소비기한인지는 <span class="r">설명할 수 있는 규칙</span> 이 정한다</div>
+</section>
+
+<!-- 4 -->
+<section class="page">
+  <h1>3. 단계별로 하는 일 : <em>사람이 날짜를 찾는 순서와 같다</em><span>슬라이드 7 · 13 · 14번</span></h1>
+  <div class="cols c32">
+    <table>
+      <tr><th style="width:17%">단계</th><th style="width:24%">사람이라면</th><th>프로그램은</th><th style="width:25%">이렇게 한 이유</th></tr>
+      <tr><td><b><span class="no">1</span>탐지</b></td><td>글자가 어디 있나 훑어본다</td><td>사진을 640px 로 줄여 글자 위치(상자)를 찾는다. 장당 한 번만</td><td>탐지 시간은 픽셀 수에 비례. 480px 로 더 줄이면 정확도가 무너진다</td></tr>
+      <tr><td><b><span class="no">2</span>인식</b></td><td>글자를 읽는다</td><td>큰 글자부터 8개씩 묶어 읽는다. 날짜를 찾으면 그 글자 크기의 0.6배보다 작은 글씨는 건너뛴다</td><td>날짜 도장은 영양성분표 잔글씨보다 크다. 제조일·소비기한 짝은 크기가 같아 둘 다 읽힌다</td></tr>
+      <tr><td><b><span class="no">3</span>주변 재탐지</b></td><td>옆 줄에 날짜가 더 있나 본다</td><td>날짜 줄 위아래에 비슷한 크기의 숫자 줄이 있으면 그 주변만 원본 해상도로 다시 탐지</td><td>줄인 사진에서 두 번째 날짜가 뭉개져 읽히는 경우를 살린다</td></tr>
+      <tr><td><b><span class="no">4</span>다시 읽기</b></td><td>헷갈리면 가까이 본다</td><td>날짜 줄만 원본에서 잘라 다시 읽고 첫 결과와 투표. 고치기만 하고 지우지는 못한다</td><td>예전에는 맞게 읽은 답을 이 단계가 지웠다 (111장)</td></tr>
+      <tr><td><b><span class="no">5</span>규칙 해석</b></td><td>이게 소비기한이 맞나 판단</td><td>날짜 형식을 정리하고, 바코드 같은 숫자를 버리고, 남은 후보 중 하나를 고른다</td><td>왜 그 날짜를 골랐는지 설명할 수 있다</td></tr>
+      <tr><td><b>예비 경로</b></td><td>안 보이면 각도를 바꿔 본다</td><td>후보가 없을 때만 해상도 올리기 → 도트 전처리 → 파인튜닝 인식기 → 확대</td><td>어려운 사진에만 시간을 쓴다. 평균 약 +1초</td></tr>
+    </table>
+    <div>
+      <img class="demo" src="../src/img/demo_two.png" alt="">
+      <div class="s m" style="margin-top:4px">실제 실행 결과 (슬라이드 14번). 빨간 상자가 고른 날짜 줄. <b>25.06.26(제조)</b> 과 <b>26.06.25(소비)</b> 를 둘 다 읽고 늦은 쪽을 골랐다.</div>
+    </div>
+  </div>
+  <div class="strip">비용이 큰 단계는 전부 <span class="r">조건부</span> 다. 그래서 어려운 사진을 포기하지 않으면서도 빠르다</div>
+</section>
+
+<!-- 5 -->
+<section class="page">
+  <h1>4. 소비기한을 고르는 규칙과 <em>병기 처리</em><span>슬라이드 9번 · 식별력 20점 항목</span></h1>
+  <div class="cols c2">
+    <div>
+      <h2>포장에는 날짜처럼 생긴 숫자가 많다</h2>
+      <table>
+        <tr><th>헷갈리는 숫자</th><th>예</th><th>규칙</th></tr>
+        <tr><td>품목보고번호 · 바코드</td><td>20130628332176</td><td>9자리 이상 숫자는 통째로 지운다</td></tr>
+        <tr><td>영양성분표 · 중량</td><td>78 7 5 31</td><td>신뢰 등급 : 점·하이픈으로 구분된 완전한 날짜가 항상 우선</td></tr>
+        <tr><td>제조일 + 소비기한</td><td>25.06.26 / 26.06.25</td><td>가장 좋은 등급 안에서 <b>가장 늦은 날짜</b></td></tr>
+        <tr><td>시각 · 로트번호</td><td>13:11 / A03</td><td>날짜 패턴에서 제외</td></tr>
+        <tr><td>연·월·일 순서</td><td>26.03.20</td><td>기본은 년.월.일. 말이 안 되거나 연도가 2028 이상이면 일.월.년</td></tr>
+        <tr><td>범위 밖 연도</td><td>2033, 2009</td><td>2017 ~ 2031 만 인정</td></tr>
+        <tr><td>후보 없음</td><td>—</td><td>추측하지 않고 <b class="r">NONE</b></td></tr>
+      </table>
+      <div class="s m" style="margin-top:5px">연월일 순서의 기본값은 감이 아니라 우리가 단 라벨 통계로 정했다 (2자리 세 개 표기 : 년월일 344장, 일월년 102장).</div>
+    </div>
+    <div>
+      <h2>병기 = 제조일과 소비기한이 같이 찍힌 사진 (전체의 약 10%)</h2>
+      <div class="card" style="margin-bottom:7px">
+        <b>자주 나오는 오해</b> : "날짜를 하나 찾으면 읽기를 끝내서 제조일만 읽는다" → 초기 버전의 문제였고 고쳤다. 지금은 찾은 날짜보다 <b>훨씬 작은 글씨만</b> 건너뛴다.
+      </div>
+      <table>
+        <tr><th>병기 오답의 원인 (예선 구성, 83장)</th><th>장수</th></tr>
+        <tr><td>소비기한 줄을 깨지게 읽거나 잘못 읽음</td><td>31</td></tr>
+        <tr><td>아예 못 읽음</td><td>17</td></tr>
+        <tr><td>소비기한 줄이 탐지되지 않음</td><td>12</td></tr>
+        <tr><td>둘 다 읽었는데 잘못 고름</td><td>12</td></tr>
+        <tr><td>다시 읽기가 날짜를 바꿈</td><td>8</td></tr>
+      </table>
+      <h2 style="margin-top:8px">고친 방법</h2>
+      <ul>
+        <li><b>주변 재탐지</b> : 이웃 줄을 원본 해상도로 다시 읽어 후보에 추가 (병기 +5장 / −1장, 다른 사진 영향 0)</li>
+        <li><b>다시 읽기는 지우지 못하게</b>, <b>해석 규칙 4개</b> (구분자 일치, 꼬리 숫자, 깨진 줄 다시 읽기, 연월 구분자 빠짐)</li>
+      </ul>
+      <div class="card p" style="margin-top:7px"><b>결과</b> : 병기 정확도 <b class="r">64.9% → 78.3%</b> (판정용 299장). 남은 오답은 글자 자체가 안 읽히는 경우라 규칙으로는 더 줄이기 어렵다.</div>
+    </div>
+  </div>
+  <div class="strip">규칙마다 <span class="r">어떤 오답에서 나왔는지</span> 와 <span class="r">몇 장을 얻고 잃었는지</span> 가 기록돼 있다</div>
+</section>
+
+<!-- 6 -->
+<section class="page">
+  <h1>5. 모델 선정 과정 : <em>속도 때문에 바꿨는데 정확도도 올랐다</em><span>슬라이드 12번 · 모델 선택 근거 15점</span></h1>
+  <div class="cols c32">
+    <div>
+      <table>
+        <tr><th style="width:7%">#</th><th>구성</th><th style="width:13%">정확도</th><th style="width:14%">장당 시간</th><th style="width:26%">판단</th></tr>
+        <tr><td><span class="no">1</span></td><td>EasyOCR (탐지 CRAFT + 인식 english_g2)</td><td>39.1%</td><td>약 5초</td><td>출발점. 느리고 부정확</td></tr>
+        <tr><td><span class="no">2</span></td><td><span class="no">1</span>+ 후처리 규칙 5개 수정</td><td>44.4%</td><td></td><td></td></tr>
+        <tr><td rowspan="3"><span class="no">3</span></td><td>인식기만 교체 : PP-OCRv3</td><td>53.4%</td><td rowspan="3">5.8초</td><td rowspan="3">정확도는 올랐지만 시간 초과 (500장 2,905초). 탐지기가 시간의 절반 이상</td></tr>
+        <tr><td>인식기만 교체 : PP-OCRv4</td><td>58.6%</td></tr>
+        <tr><td>인식기만 교체 : <b>PP-OCRv5</b></td><td><b>60.9%</b></td></tr>
+        <tr class="hl"><td><span class="no">4</span></td><td><b>탐지기도 교체 : PP-OCRv5 mobile det</b></td><td><b class="r">67.7%</b></td><td><b class="r">1.8초</b></td><td><b>채택</b></td></tr>
+      </table>
+      <div class="s m" style="margin-top:4px">정확도는 초기 라벨 133장 기준. <span class="no">3</span>은 같은 사진 · 같은 규칙 · 같은 탐지기로 인식기만 바꾼 공정한 비교다. 호출당 시간은 v3·v4·v5 가 70ms 안팎으로 같아 가장 정확한 v5 를 골랐다.</div>
+      <h2 style="margin-top:9px">처음 계획은 YOLO 3단계 탐지였다</h2>
+      <ul>
+        <li>소비기한 영역 → 날짜 블록 → 연·월·일 토큰을 YOLO 세 개로 찾으려 했다.</li>
+        <li>보류한 이유 : 학습에 필요한 <b>상자 정답이 0장</b>이었고, 탐지기 교체만으로 속도와 정확도가 같이 풀렸다.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>쓰지 않은 것 · 버린 것</h2>
+      <table>
+        <tr><th>후보</th><th>결과</th><th>이유</th></tr>
+        <tr><td>TrOCR 등 Transformer OCR</td><td>검토만</td><td>200MB 이상, CPU 에서 느림</td></tr>
+        <tr><td>파인튜닝 인식기를 다시 읽기에</td><td>+86 / −64</td><td>맞던 답을 흔든다</td></tr>
+        <tr><td>합성 도트 글자 3,000장 학습</td><td>정밀도 84 → 81%</td><td>진짜 글씨를 대충 읽게 됨</td></tr>
+        <tr><td>인식기 셋 다수결</td><td>+8 / −4</td><td>퇴보가 많고 +0.43초</td></tr>
+        <tr><td>탐지 해상도 올리기</td><td>±1%p</td><td>시간만 +30~50%</td></tr>
+        <tr><td>한국어 인식기로 한 번 더</td><td>+7 / −2</td><td>시간이 한도의 94% → 기본 끔</td></tr>
+      </table>
+      <div class="card" style="margin-top:7px"><b>파인튜닝은 버리지 않고 자리를 바꿨다.</b> 기본 인식기가 못 읽은 사진에만 쓰면 <b class="r">+7 / −0</b>. 학습은 무료 구글 코랩(T4)에서 약 1.5시간, 비용 0원.</div>
+      <div class="s m" style="margin-top:5px">"+86 / −64" 읽는 법 : 새로 맞힌 사진 86장, 원래 맞다가 틀려진 사진 64장.</div>
+    </div>
+  </div>
+  <div class="strip">"왜 더 큰 모델을 안 썼나" → <span class="r">4코어 CPU · 2,500초</span> 가 한도다. 가벼운 모델 중에서 가장 정확한 것을 골랐다</div>
+</section>
+
+<!-- 7 -->
+<section class="page">
+  <h1>6. 검증 방법 : <em>점수가 올라도 버렸다</em><span>슬라이드 5 · 8 · 12번 · 설계 논리 25점</span></h1>
+  <div class="cols c3">
+    <div class="card"><h2><span class="no">1</span>정답을 직접 달았다</h2>날짜 해석 규칙을 <b>문서로 먼저</b> 정하고, 5명이 3,352장 전부에 라벨을 달았다. 라벨러는 포장에 찍힌 그대로만 입력하고 해석은 도구가 규칙으로 처리한다.</div>
+    <div class="card"><h2><span class="no">2</span>시험지를 봉인했다</h2><b>500장</b>은 따로 떼어 학습과 규칙 도출에 쓰지 않고 점수 잴 때만 썼다. 기능을 넣을지 말지는 나머지 <b>2,852장</b>에서 판정했다.</div>
+    <div class="card"><h2><span class="no">3</span>회복과 퇴보를 따로 셌다</h2>새로 맞힌 사진(회복)과 맞다가 틀려진 사진(퇴보)을 따로 센다. <b>퇴보가 회복의 1/3 을 넘으면 점수가 올라도 기각.</b></div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <h2>오답을 "정답이 어느 단계에서 사라졌나"로 나눴다 (예선 구성 오답 603장)</h2>
+      <table>
+        <tr><th>단계</th><th>장수</th><th>본선 처방</th><th>결과</th></tr>
+        <tr><td>못 읽음 : 후보가 없음</td><td>183</td><td>주변 재탐지, 확대, 파인튜닝 재시도</td><td>+25 / −1</td></tr>
+        <tr><td>잘못 읽음 : 숫자 오독</td><td>290</td><td>해석 규칙, 깨진 줄 다시 읽기</td><td>+36 / −2</td></tr>
+        <tr class="hl"><td><b>읽었다가 지움</b></td><td><b>111</b></td><td>1차 후보를 지우지 못하게</td><td><b>+53 / −5</b></td></tr>
+        <tr><td>잘못 고름</td><td>19</td><td>구분자 일치 규칙</td><td>+10 / −0</td></tr>
+      </table>
+      <div class="s m" style="margin-top:4px">"읽었다가 지움"은 AI 문제가 아니라 <b>우리 코드의 문제</b>였다. 원인을 나누니 모델을 키우는 대신 가장 싼 처방을 고를 수 있었다.</div>
+    </div>
+    <div>
+      <h2>정답도 의심했다</h2>
+      <ul>
+        <li>오답을 사람이 다시 보니 <b>라벨이 틀린 게 23장</b> (봉인 500장 7장 + 판정용 16장).</li>
+        <li>그중 <b>16장은 모델이 맞고 사람이 틀린 것</b>이었다.</li>
+        <li>사람도 날짜를 옮겨 적다가 틀린다 → 도메인에서 "사람과 모델이 서로 확인한다"의 근거.</li>
+      </ul>
+      <h2 style="margin-top:7px">솔직하게 말할 것</h2>
+      <ul>
+        <li>봉인 500장은 <b>완전 무오염은 아니다.</b> 예선 때 단계별 효과를 여기서 확인했고, 오답을 보고 라벨 7장을 고쳤다. 본선의 규칙 도출과 채택 판정은 전부 2,852장에서 했다.</li>
+        <li>튜닝에 쓴 사진(86.7%)과 안 쓴 사진(86.2%)의 점수가 비슷하다 → 과적합이 아니라는 근거.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="strip">모든 실험의 예측 파일과 기록이 저장소에 있다 : <span class="r">results/ · docs/실험_기록.md</span></div>
+</section>
+
+<!-- 8 -->
+<section class="page">
+  <h1>7. 성능과 속도 : <em>봉인 500장 86.2%, 한도의 55 ~ 79%</em><span>슬라이드 11 · 13번</span></h1>
+  <div class="cols c32">
+    <div class="card w">
+      <h2>정확도가 오른 과정 (연·월·일이 전부 맞은 비율, %)</h2>
+      <div class="hist">
+        <div style="height:45%"><b>39.1</b></div><div style="height:51%"><b>44.4</b></div><div style="height:70%"><b>60.9</b></div><div style="height:82%"><b>71.2</b></div>
+        <div style="height:85%"><b>73.6</b></div><div style="height:89%"><b>77.0</b></div><div style="height:90%"><b>78.4</b></div><div style="height:94%"><b>81.8</b></div>
+        <div style="height:96%"><b>83.2</b></div><div class="k" style="height:97%"><b>84.2</b></div><div class="f" style="height:100%"><b>86.2</b></div>
+      </div>
+      <div class="histl"><span>EasyOCR</span><span>규칙 5개</span><span>인식기 교체</span><span>탐지기 교체</span><span>신뢰 등급</span><span>도트 폴백</span><span>다시 읽기 투표</span><span>규칙 v5·v6</span><span>파인튜닝 재시도</span><span><b>예선 제출</b></span><span><b>본선 최종</b></span></div>
+      <div class="s m" style="margin-top:4px">앞의 세 막대는 초기 라벨 133장, 나머지는 봉인 500장 기준.</div>
+    </div>
+    <div>
+      <table>
+        <tr><th>항목</th><th>예선 제출</th><th>본선 최종</th></tr>
+        <tr class="hl"><td>봉인 500장, 전부 일치</td><td>84.2%</td><td><b class="r">86.2%</b></td></tr>
+        <tr><td>봉인 500장, 연·월·일 따로</td><td>88.8%</td><td><b class="r">90.8%</b></td></tr>
+        <tr><td>판정용 2,852장</td><td>82.3%</td><td><b>86.7%</b></td></tr>
+        <tr><td>제조·소비 병기</td><td>64.9%</td><td><b>78.3%</b></td></tr>
+        <tr><td>못 읽는 비율 (봉인 500장)</td><td></td><td>3.0%</td></tr>
+        <tr><td>답한 것 중 맞은 비율</td><td></td><td>88.9%</td></tr>
+        <tr><td>장당 시간</td><td>3.2초</td><td><b>2.7 ~ 4.0초</b></td></tr>
+        <tr><td>500장</td><td>1,595초</td><td>1,370 ~ 1,985초</td></tr>
+        <tr><td>메모리 · 학습 비용</td><td></td><td>1.25GB · 0원</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <h2>본선에서 오른 과정 (판정용 2,852장)</h2>
+      <div class="bar"><span class="nm">예선 구성</span><span class="tr"><i style="width:60%; background:#B9B9B9"></i></span><span class="v">82.3%</span></div>
+      <div class="bar"><span class="nm">+ 다시 읽기 규칙</span><span class="tr"><i style="width:73%; background:#9A9A9A"></i></span><span class="v">84.3%</span></div>
+      <div class="bar"><span class="nm">+ 해석 규칙 4개</span><span class="tr"><i style="width:87%; background:#7A7A7A"></i></span><span class="v">86.0%</span></div>
+      <div class="bar"><span class="nm">+ 재탐지·재시도</span><span class="tr"><i style="width:97%; background:#5A5A5A"></i></span><span class="v">86.9%</span></div>
+      <div class="bar"><span class="nm"><b>최종 (한국어 끔)</b></span><span class="tr"><i style="width:95%; background:var(--red)"></i></span><span class="v">86.7%</span></div>
+      <div class="s m">마지막에 0.2%p 를 내주고 시간 여유를 택했다. 한국어 인식기를 켜면 500장 2,350초로 한도의 94% 였다.</div>
+    </div>
+    <div>
+      <h2>속도를 만든 결정</h2>
+      <ul>
+        <li>가벼운 모델로 교체 : 5.8초 → 1.8초</li>
+        <li>탐지는 줄인 사진에서 한 번, 다시 읽기는 잘라낸 조각만</li>
+        <li>날짜를 찾으면 잔글씨(영양성분표)는 읽지 않는다</li>
+        <li>예비 경로는 못 읽은 사진에만. 사진의 88% 는 1.8초에 끝난다</li>
+        <li>시간 예산 가드가 제한 시간 안 완주를 보장</li>
+      </ul>
+      <div class="s m">속도는 개발 PC 두 대에서 스레드 4개로 제한해 잰 값이다. 채점 서버의 속도는 모른다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="page">
+  <h1>8. 도메인 1 : <em>누구의 어떤 문제인가</em><span>슬라이드 16번 · 도메인 15점</span></h1>
+  <div class="cols c4">
+    <div class="card"><h2>도메인</h2>중고거래 플랫폼의<br><b>식품·건강기능식품 게시글</b></div>
+    <div class="card p"><h2>1차 대상</h2><b class="r">건강기능식품 카테고리</b><br><span class="s">미개봉 · 소비기한 이내 · 연 10회 이하</span></div>
+    <div class="card"><h2>이야기의 시작</h2>명절 선물세트가<br>중고거래로 쏟아진다</div>
+    <div class="card"><h2>확장</h2>가공식품·선물세트 → 품목보고번호 → 공장 출하 확인</div>
+  </div>
+  <div class="cols c32">
+    <div>
+      <h2>문제 : 소비기한은 판매자가 손으로 적고, 구매자는 확인할 방법이 없다</h2>
+      <table>
+        <tr><th>근거</th><th>숫자</th><th>출처</th></tr>
+        <tr class="hl"><td>가장 많은 위반 유형이 기한 문제</td><td>위반 375건 중 <b>211건</b>이 사용기한 확인 불가·불일치</td><td>약사 단체 모니터링 (보도)</td></tr>
+        <tr><td>식품 관련 상담 급증</td><td>19건 → 661건 (2022 → 2025)</td><td>한국소비자원 (보도)</td></tr>
+        <tr><td>거래 규모</td><td>게시글 482,675건, 위반 조치 14,729건 (3.05%)</td><td>식약처, 2024.5 ~ 2025.12</td></tr>
+        <tr><td>명절에 몰림</td><td>위반이 평시의 3배 이상</td><td>보도</td></tr>
+        <tr><td>시의성</td><td>올해 추석 선물세트 거래량 +50%</td><td>플랫폼 집계 (보도)</td></tr>
+        <tr class="hl"><td>지금의 대응</td><td>게시 뒤에 신고·모니터링. 전담 인력 <b>5명</b></td><td>보도</td></tr>
+      </table>
+      <div class="s m" style="margin-top:4px">전부 9/29 에 기사 원문으로 다시 확인했다 (<b>docs/D안_추가조사_0928.md</b> 8절). 플랫폼 내부 자료는 없다.</div>
+    </div>
+    <div>
+      <h2>왜 건강기능식품이 1차 대상인가</h2>
+      <ul>
+        <li><b>규칙이 명확하다.</b> 거래 조건이 정해져 있다.</li>
+        <li><b>공개 통계가 있다.</b> 일반 가공식품은 게시글 수조차 공개된 게 없다.</li>
+        <li><b>플랫폼이 이미 사진을 읽는다.</b> 건강기능식품 문구·인증마크를 OCR 로 확인한다.</li>
+      </ul>
+      <h2 style="margin-top:7px">왜 지금 가능한가</h2>
+      <ul>
+        <li>플랫폼 : 사진을 올리면 상품명·카테고리를 자동으로 써 주는 기능 운영</li>
+        <li>식약처 : 포장을 찍으면 소비기한을 읽어 주는 서비스 출시 (2026-09)</li>
+        <li>일본 메루카리 : 소비기한 사진을 필수로 요구. 확인은 사람이 한다</li>
+      </ul>
+    </div>
+  </div>
+  <div class="strip">글은 월 2.4만 건, 보는 사람은 5명. 포장 판독과 사진 자동 입력은 각각 있고, <span class="r">둘을 게시 흐름에서 잇는 자리</span> 가 비어 있다</div>
+</section>
+
+<!-- 10 -->
+<section class="page">
+  <h1>9. 도메인 2 : <em>서비스는 이렇게 동작한다</em><span>슬라이드 16번</span></h1>
+  <div class="cols" style="grid-template-columns: 1.55fr 1fr">
+    <div>
+      <div class="phones">
+        <figure><img src="../src/img/dash_phone1.png" alt=""><figcaption><span class="no">1</span>날짜면 촬영</figcaption></figure>
+        <figure><img src="../src/img/dash_phone2.png" alt=""><figcaption><span class="no">2</span>확신하면 자동 입력</figcaption></figure>
+        <figure><img src="../src/img/dash_phone3.png" alt=""><figcaption><span class="no">3</span>확신이 낮으면 빈칸</figcaption></figure>
+        <figure><img src="../src/img/dash_phone4.png" alt=""><figcaption><span class="no">4</span>날짜·남은 일수·원본</figcaption></figure>
+      </div>
+      <div class="s m" style="margin-top:5px">시연용으로 만든 화면(설계안)이다. <b>실제 앱을 구현한 것은 아니다.</b> 사진·판독값·확신도는 우리 프로그램의 실제 출력이다. 화면은 서현이 만든 <b>발표/dashboard/</b>.</div>
+    </div>
+    <div>
+      <h2>모델 결과별로 판매자에게 일어나는 일</h2>
+      <table>
+        <tr><th>모델 결과</th><th>판매자는</th><th>남는 위험</th></tr>
+        <tr><td>맞게 읽음</td><td>채워진 날짜를 확인</td><td>없음</td></tr>
+        <tr><td>못 읽음 · 확신 낮음</td><td>빈칸. 손으로 입력</td><td>지금과 같음</td></tr>
+        <tr><td>이르게 읽음</td><td>확대본을 보고 고침</td><td>안 고치면 판매자에게 불리</td></tr>
+        <tr class="hl"><td><b>늦게 읽음</b></td><td>확대본을 보고 고침</td><td><b>안 고치면 남은 날이 많게 표시</b></td></tr>
+      </table>
+      <h2 style="margin-top:8px">핵심 논리 세 문장</h2>
+      <ul>
+        <li>판매자가 마지막에 확인하니, 모델이 틀려도 <b>한 번 고치면 끝</b>이다.</li>
+        <li>못 읽으면 빈칸이라 <b>지금보다 나빠지지 않는다.</b></li>
+        <li>그래서 정확도는 안전성이 아니라 <b class="r">자동 입력 비율</b>을 정한다.</li>
+      </ul>
+      <div class="say" style="margin-top:8px"><b>"그냥 타이핑하는 것과 뭐가 다른가"</b> → 정직한 판매자가 정확히 치면 결과는 같다. 차이는 그 날짜를 <b>확인할 수 있느냐</b>다. 지금은 판매자가 적은 숫자 하나뿐이라 맞는지 아무도 모른다. 우리는 그 숫자를 날짜가 찍힌 사진과 대조할 수 있게 만든다.</div>
+    </div>
+  </div>
+  <div class="strip">속이려는 소수를 잡는 장치가 아니다. <span class="r">확인하지 않고 올리는 다수</span> 를 게시 전에 돕는다</div>
+</section>
+
+<!-- 11 -->
+<section class="page tight">
+  <h1>10. 도메인 3 : <em>설계 이유 · 비용 · 도입 이유</em><span>슬라이드 17 · 18번</span></h1>
+  <div class="cols c2">
+    <div>
+      <h2>자동 입력 기준 (직접 찍은 폰 사진 389장 실측)</h2>
+      <table>
+        <tr><th style="width:43%">기준</th><th>채워지는 비율</th><th>채운 값 정확도</th><th>틀린 값</th></tr>
+        <tr><td>읽히면 채움</td><td>70.2%</td><td>70.3%</td><td>20.8%</td></tr>
+        <tr><td>확신도 0.7 이상</td><td>44.7%</td><td>77.0%</td><td>10.3%</td></tr>
+        <tr class="hl"><td><b>0.7 + 10초 제한 (운영 기준)</b></td><td><b>40.6%</b></td><td><b>79.7%</b></td><td><b class="r">8.2%</b></td></tr>
+        <tr><td>확신도 0.9 이상</td><td>16.5%</td><td>87.5%</td><td>2.1%</td></tr>
+      </table>
+      <h2 style="margin-top:8px">설계마다 측정값이 붙어 있다</h2>
+      <table>
+        <tr><th style="width:38%">설계</th><th>이유</th></tr>
+        <tr><td>확신도 0.7</td><td>0.9 로 올리면 틀린 값 32장을 피하려고 맞는 값 78장을 포기한다</td></tr>
+        <tr><td>10초 안에 답이 없으면 빈칸</td><td>폰 사진의 32% 가 10초를 넘겼고, 그 123장 중 맞힌 건 13장</td></tr>
+        <tr><td>확신이 낮으면 읽은 값을 숨김</td><td>보여 주면 판매자가 그대로 따라 적는다. 먼저 입력하게 하고 대조</td></tr>
+        <tr><td>날짜 확대본을 항상 표시</td><td>늦게 읽은 18장 중 13장이 확신도 0.7 이상. 확신도만으로는 못 거른다</td></tr>
+        <tr><td>읽은 값만으로 차단하지 않음</td><td>기한이 남은 글의 약 11% 가 지난 것으로 읽힌다 (가정 포함)</td></tr>
+        <tr><td>"확인됨" 표시를 쓰지 않음</td><td>보증 표시는 조작된 날짜에 신뢰를 빌려준다</td></tr>
+        <tr><td>선물세트는 상품별로 촬영</td><td>세트는 가장 이른 날짜가 중요한데 우리 규칙은 가장 늦은 날짜를 고른다</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>비용 (건강기능식품 카테고리, 하루 약 800건)</h2>
+      <table>
+        <tr><th>항목</th><th>값</th></tr>
+        <tr><td>서버</td><td>하루 53분 ~ 2.4시간 = 서버 1대의 4 ~ 10%</td></tr>
+        <tr class="hl"><td><b>게시글 한 건당</b></td><td><b class="r">0.2 ~ 5.8원</b></td></tr>
+        <tr><td>라이선스 · GPU · 학습비</td><td>0원</td></tr>
+        <tr><td>포함하지 않은 것</td><td>개발, 앱 화면 변경, 운영 인력</td></tr>
+      </table>
+      <h2 style="margin-top:8px">OCR 이 있어야 되는 것 / 없어도 되는 것</h2>
+      <table>
+        <tr><th>얻는 것</th><th>OCR 필요</th></tr>
+        <tr><td>적힌 날짜와 사진의 대조 (판매자 오타가 그냥 지나갈 확률 0.4%)</td><td><b class="r">예</b></td></tr>
+        <tr><td>사진에 날짜가 실제로 찍혔는지 확인</td><td><b class="r">예</b></td></tr>
+        <tr><td>자동 입력, 판매자 수정값 축적</td><td><b class="r">예</b></td></tr>
+        <tr><td>남은 일수 표시, 검색·정렬, 기한 지난 글 숨김</td><td>아니오</td></tr>
+      </table>
+      <div class="card p" style="margin-top:8px"><b>도입 이유는 비용 절감이 아니라 규제 대응이다.</b> 위반 처리비 절감만으로는 본전이 안 된다 (손익분기 780 ~ 1,900원, 사람 검토는 약 86원). 건강기능식품 개인 간 거래는 아직 시범사업이고, 게시글마다 남는 사진과 판독 기록이 "관리하고 있다"는 증거가 된다.</div>
+      <div class="s m" style="margin-top:5px"><b>하지 않는 것</b> : 사기 방지(스티커 위조, 다른 상품 촬영), 개봉 여부 판별.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="page">
+  <h1>11. 외울 숫자와 용어<span>숫자는 보고서 초안 D v1.8 기준</span></h1>
+  <div class="cols c2">
+    <div>
+      <h2>외울 숫자</h2>
+      <table>
+        <tr><th style="width:27%">숫자</th><th>뜻</th></tr>
+        <tr class="hl"><td><b class="r">86.2% / 90.8%</b></td><td>봉인 500장 정확도. 앞은 연·월·일 전부, 뒤는 따로 채점 (예선 84.2 / 88.8)</td></tr>
+        <tr><td><b>86.7%</b></td><td>판정용 2,852장. 봉인 셋과 비슷 → 과적합 아님 (예선 구성 82.3)</td></tr>
+        <tr><td><b>78.3%</b></td><td>제조·소비 병기 사진 (예선 구성 64.9)</td></tr>
+        <tr><td><b>2.7 ~ 4.0초</b></td><td>장당 시간. 500장이 한도 2,500초의 55 ~ 79%</td></tr>
+        <tr><td><b>21MB · 0원</b></td><td>모델 전체 크기 · 학습 비용</td></tr>
+        <tr><td><b>603 = 183·290·111·19</b></td><td>오답 진단 : 못 읽음 · 잘못 읽음 · 읽었다가 지움 · 잘못 고름</td></tr>
+        <tr><td><b>+86 / −64</b></td><td>파인튜닝을 다시 읽기에 썼을 때. 버린 대표 사례</td></tr>
+        <tr class="hl"><td><b class="r">21.9% · 4.9%</b></td><td>폰 사진 389장에서 못 읽는 비율 · 늦게 읽는(위험한) 비율</td></tr>
+        <tr class="hl"><td><b class="r">40.6% · 8.2%</b></td><td>운영 기준에서 자동 입력 비율 · 틀린 값을 받는 판매자</td></tr>
+        <tr><td><b>0.2 ~ 5.8원</b></td><td>게시글 한 건당 비용</td></tr>
+        <tr><td><b>211 / 375건 · 5명</b></td><td>기한 관련 위반 · 전담 모니터링 인력</td></tr>
+      </table>
+      <div class="card" style="margin-top:6px"><b>폰 사진 389장의 정확도는 52.4%</b> 다 (찍은 사람별 44 ~ 70%). 보고서와 슬라이드 본문에는 서비스에 직접 쓰이는 수치만 적었다. <b>물으면 숨기지 않고 바로 답한다.</b></div>
+    </div>
+    <div>
+      <h2>용어</h2>
+      <table>
+        <tr><th style="width:27%">용어</th><th>쉬운 말</th></tr>
+        <tr><td>OCR</td><td>사진 속 글자를 컴퓨터가 읽는 기술</td></tr>
+        <tr><td>탐지 / 인식</td><td>글자 위치 찾기 / 그 글자 읽기</td></tr>
+        <tr><td>PP-OCRv5 mobile</td><td>우리가 쓴 무료 공개 AI 모델. mobile 은 가벼운 버전</td></tr>
+        <tr><td>후처리 규칙</td><td>읽은 글자에서 소비기한을 골라내는, 사람이 만든 규칙</td></tr>
+        <tr><td>NONE (미인식)</td><td>"못 읽었음". 틀린 날짜를 지어내지 않으려고 쓴다</td></tr>
+        <tr><td>봉인 500장</td><td>개발에 안 쓰고 점수 잴 때만 쓴 시험지</td></tr>
+        <tr><td>판정용 2,852장</td><td>기능을 넣을지 말지 판단하는 데 쓴 사진</td></tr>
+        <tr><td>완전일치 / 필드평균</td><td>연·월·일 전부 맞아야 정답 / 각각 채점한 평균</td></tr>
+        <tr><td>회복 / 퇴보</td><td>새로 맞힌 사진 / 맞다가 틀려진 사진</td></tr>
+        <tr><td>파인튜닝</td><td>공개 AI 모델을 우리 데이터로 추가 학습</td></tr>
+        <tr><td>폴백 · 재시도</td><td>처음 방법이 실패했을 때만 쓰는 예비 방법</td></tr>
+        <tr><td>도트 인쇄 · 각인</td><td>점으로 찍은 글씨 · 눌러 새긴 글씨. 읽기 어렵다</td></tr>
+        <tr><td>병기</td><td>제조일과 소비기한이 한 사진에 같이 찍힌 것</td></tr>
+        <tr><td>확신도</td><td>AI 가 "이 답이 맞을 것 같다"고 매긴 점수 (0 ~ 1)</td></tr>
+        <tr><td>시간 예산 가드</td><td>늦을 것 같으면 스스로 단계를 줄이는 장치</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="page tight">
+  <h1>12. 예상 질문과 발표 흐름<span>전체 질문은 발표/발표_대본.md</span></h1>
+  <div class="cols c32">
+    <div>
+      <h2>꼭 준비할 질문 8개</h2>
+      <table>
+        <tr><th style="width:33%">질문</th><th>답의 뼈대</th></tr>
+        <tr><td>그냥 타이핑하는 것과 뭐가 다른가</td><td>결과는 같을 수 있다. 차이는 적힌 날짜를 사진과 대조할 수 있느냐. 판매자 오타가 그냥 지나갈 확률 0.4%</td></tr>
+        <tr><td>폰 사진을 잘 못 읽는데 되나</td><td>운영 기준이면 41% 자동 입력, 틀린 값 8%. 못 읽으면 빈칸이라 지금과 같다. 판매자가 최종 확인</td></tr>
+        <tr><td>폰 사진 정확도는 몇 %인가</td><td>52.4%. 어려운 유형만 골라 찍은 389장이다. 숨기지 않고 답한다</td></tr>
+        <tr><td>스티커로 날짜를 위조하면</td><td>막지 못한다. 그래서 사기 방지로 제안하지 않았고 "확인됨" 표시도 쓰지 않는다</td></tr>
+        <tr><td>16번 화면은 구현한 건가</td><td>아니다, 설계안이다. 구현하고 검증한 것은 날짜를 읽는 모델이고 14번이 실제 실행 화면</td></tr>
+        <tr><td>봉인 500장을 정말 안 썼나</td><td>학습과 규칙 도출에는 안 썼다. 다만 예선 때 오답을 보고 라벨 7장을 고쳐 완전 무오염은 아니다</td></tr>
+        <tr><td>왜 파인튜닝을 더 안 했나</td><td>다시 읽기에 쓰면 +86 / −64. 못 읽은 사진에만 쓰면 +7 / −0 이라 그 방식만 채택</td></tr>
+        <tr><td>ROI 는</td><td>건당 0.2 ~ 5.8원. 처리비 절감으로는 본전이 안 된다고 먼저 밝힌다. 도입 이유는 규제 대응</td></tr>
+      </table>
+      <div class="say" style="margin-top:7px"><b>답하는 요령</b> : 결론 한 문장 → 숫자 하나 → 30초 안에. 모르면 "그건 측정하지 않았습니다. 가장 가까운 숫자는 ~입니다." 기술적으로 깊은 질문은 "구현한 팀원이 답하겠습니다"로 서현·병철에게 넘긴다.</div>
+    </div>
+    <div>
+      <h2>발표 10분 흐름</h2>
+      <table>
+        <tr><th style="width:13%">시간</th><th style="width:19%">슬라이드</th><th>한 줄 메시지</th></tr>
+        <tr><td>0:00</td><td>1 ~ 3</td><td>제약(CPU · 41분 · 정답 없음)이 설계를 정했다</td></tr>
+        <tr><td>1:00</td><td>4 ~ 5</td><td>정답을 직접 달고 시험지를 봉인했다</td></tr>
+        <tr><td>2:00</td><td>6 ~ 9</td><td>쉬운 사진은 빠르게, 오답은 원인별로, 소비기한은 규칙으로</td></tr>
+        <tr><td>4:30</td><td>10 ~ 14</td><td>86.2%, 점수가 올라도 버린 것들, 완주 보장, 실행 화면</td></tr>
+        <tr><td>7:00</td><td>15 ~ 19</td><td>중고거래 : 확신할 때만 채우고 판매자가 확인</td></tr>
+        <tr><td>9:20</td><td>20</td><td>정리</td></tr>
+      </table>
+      <h2 style="margin-top:8px">발표의 결론 세 문장</h2>
+      <div class="card">
+        <b>1. 제약에서 출발했다.</b> CPU 와 시간 제한 안에서 86.2%.<br>
+        <b>2. 검증을 먼저 세웠다.</b> 점수가 올라도 맞던 걸 망가뜨리면 버렸다.<br>
+        <b>3. 틀리는 방식을 설계했다.</b> 모르면 모른다고 말하니, 사람과 함께 쓸 수 있다.
+      </div>
+      <h2 style="margin-top:8px">우리 팀의 강점</h2>
+      <ul>
+        <li>모든 결정에 "몇 장을 얻고 잃었는지" 기록이 있다.</li>
+        <li>약점과 본전이 안 되는 계산을 먼저 공개한다.</li>
+        <li>21MB · GPU 0 · 비용 0 으로 바로 넣을 수 있는 크기다.</li>
+        <li>팀 전원이 3,352장 라벨과 489장 촬영으로 데이터를 만들었다.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
