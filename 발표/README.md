@@ -24,6 +24,22 @@ python make_script.py    # 발표_대본.md 생성 (build.js 의 발표자 노�
 
 PowerPoint 에서 직접 고쳐도 되지만, 그 뒤에 `build.js` 를 다시 돌리면 직접 고친 내용이 사라진다.
 
+## 서비스 시연 화면 (`src/mockup/`)
+
+16번 슬라이드의 화면 4장은 HTML 로 만든 목업을 캡처한 것이다. 문구를 고치려면 HTML 을 고치고 다시 캡처한다.
+
+| 파일 | 화면 | 캡처 크기 |
+| --- | --- | --- |
+| `screen1_capture.html` | ① 날짜면 촬영 | 320 x 640 |
+| `screen2_confirm.html` | ② 자동 입력 확인 | 320 x 640 |
+| `screen3_listing.html` | ③ 게시글 | 320 x 640 |
+| `screen4_dashboard.html` | ④ 운영 화면 | 680 x 410 |
+
+- 사진은 팀이 직접 찍은 `xSY0058`(통조림 바닥). 화면의 날짜 `2027-05-08` 은 모델이 이 사진에서 실제로 읽은 값(확신도 0.947, 0.77초). 남은 일수는 발표일 2026-10-03 기준.
+- 운영 화면의 수치는 전부 `results/debug_custom389_2026-09-28.csv` 와 라벨에서 계산한 값(자동 입력 기준 확신도 0.7).
+- 특정 플랫폼의 화면·로고를 흉내 내지 않은 중립 디자인이다.
+- 캡처: Edge 로 `msedge --headless=new --screenshot=out.png --window-size=320,640 --force-device-scale-factor=3 file:///.../screen1_capture.html`, 결과를 `src/img/` 에 넣고 `node build.js`.
+
 ## 시연 캡처 (`src/img/`)
 
 네 장 모두 `predict.ipynb` 의 함수를 그대로 실행해 얻은 결과다 (9/28 통합본).

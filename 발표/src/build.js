@@ -285,33 +285,26 @@ section(4, "성능과 속도 검증", "무엇을 채택하고 무엇을 버렸�
 // ───────────────────────── 15. 섹션 5
 section(5, "도메인 적용과 운영", "중고거래 식품 게시글의 잔여기한").addNotes("마지막으로 서비스 적용입니다.");
 
-// 16. 도메인: 중고거래 잔여기한
+// 16. 도메인: 중고거래 잔여기한 (시연 화면)
 {
   const s = content("적용 도메인 : ", "중고거래 식품, 잔여기한을 거래 정보로");
   txt(s, rich(["명절 선물세트가 중고거래로 : 당근 추석 연휴 선물세트 거래량 ", ["+50%"], " (전년 대비). 그런데 소비기한은 판매자가 손으로 적는다"]), 0.3, 0.98, 9.4, 0.3, { fontSize: 11.5 });
-  const fl = [["촬영", "판매자가 앱 카메라로\n날짜면 촬영"], ["OCR", "서버 CPU, 장당 약 3초\n확신할 때만 날짜 채움"], ["확인", "날짜 확대본을 보며\n판매자가 확인·수정"]];
-  fl.forEach((r, i) => {
-    const x = 0.3 + i * 2.05;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 1.5, w: 1.85, h: 1.2, rectRadius: 0.06, fill: { color: "3A3A3A" }, line: { color: "3A3A3A", width: 0 } });
-    txt(s, r[0], x, 1.58, 1.85, 0.32, { fontSize: 13, bold: true, color: WHITE, align: "center", valign: "middle" });
-    txt(s, r[1], x + 0.05, 1.92, 1.75, 0.7, { fontSize: 9.8, color: WHITE, align: "center", valign: "middle" });
-    txt(s, "▶", x + 1.85, 1.95, 0.2, 0.3, { fontFace: KR, fontSize: 10, color: MUTE, align: "center", valign: "middle" });
+  // 폰 화면 3장 (1:2) + 운영 화면. 화면은 src/mockup/*.html 을 그대로 캡처한 것
+  const ph = [["screen1_capture.png", "① 날짜면 촬영"], ["screen2_confirm.png", "② 확신할 때만 자동 입력"], ["screen3_listing.png", "③ 남은 일수와 원본 표시"]];
+  ph.forEach((p, i) => {
+    const x = 0.3 + i * 1.72;
+    s.addShape(pres.shapes.RECTANGLE, { x: x - 0.015, y: 1.385, w: 1.53, h: 3.03, fill: { color: WHITE }, line: { color: "BDBDBD", width: 0.75 } });
+    s.addImage({ path: IMG(p[0]), x, y: 1.4, w: 1.5, h: 3.0 });
+    txt(s, p[1], x - 0.1, 4.44, 1.7, 0.26, { fontSize: 10, bold: true, align: "center", valign: "middle" });
+    if (i < 2) txt(s, "▶", x + 1.5, 2.75, 0.22, 0.3, { fontFace: KR, fontSize: 9, color: MUTE, align: "center", valign: "middle" });
   });
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.45, y: 1.3, w: 3.25, h: 0.72, rectRadius: 0.06, fill: { color: CARD }, line: { color: CARD, width: 0 } });
-  txt(s, rich([["게시글"], "  소비기한 2027-03-14 · 167일 남음\n(판매자 사진 판독값 + 날짜 원본)"]), 6.6, 1.3, 3.0, 0.72, { fontSize: 10.3, valign: "middle" });
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 6.45, y: 2.12, w: 3.25, h: 0.72, rectRadius: 0.06, fill: { color: PINK }, line: { color: PINK, width: 0 } });
-  txt(s, rich([["기한 임박"], "  →  가격 인하·나눔 제안\n", ["기한 경과"], "  →  게시글 자동 숨김"]), 6.6, 2.12, 3.0, 0.72, { fontSize: 10.3, valign: "middle" });
-
-  card(s, 0.3, 3.05, 4.6, 1.55);
-  txt(s, "이 구조의 핵심", 0.45, 3.12, 4.3, 0.28, { fontSize: 12, bold: true });
-  txt(s, rich(["판매자가 마지막에 확인하므로, 모델이 틀려도 한 번 고치면 끝난다. 그래서 정확도는 ", ["안전성이 아니라 자동 입력 비율"], " 을 결정한다. 확신이 없으면 빈칸(NONE) 으로 두니 지금보다 나빠지지 않는다"]), 0.45, 3.42, 4.3, 1.15, { fontSize: 10.8 });
-  card(s, 5.1, 3.05, 4.6, 1.55);
-  txt(s, "속이는 판매자는?", 5.25, 3.12, 4.3, 0.28, { fontSize: 12, bold: true });
-  txt(s, [{ text: "사기 방지 장치가 아니다. 스티커 위조·다른 상품 촬영은 기존 사후 모니터링 몫", options: { bullet: true, breakLine: true } },
-          { text: "\"확인됨\" 대신 판독값과 날짜 원본을 보여 줘, 위조에 신뢰를 빌려주지 않는다", options: { bullet: true, breakLine: true } },
-          { text: "원본·촬영 시각·수정 이력은 신고 시 증거로 보존", options: { bullet: true } }], 5.25, 3.42, 4.3, 1.15, { fontSize: 10.5, paraSpaceAfter: 3 });
+  s.addShape(pres.shapes.RECTANGLE, { x: 5.485, y: 1.385, w: 4.23, h: 2.562, fill: { color: WHITE }, line: { color: "BDBDBD", width: 0.75 } });
+  s.addImage({ path: IMG("screen4_dashboard.png"), x: 5.5, y: 1.4, w: 4.2, h: 2.532 });
+  txt(s, "④ 운영 화면 : 수치는 직접 촬영 389장의 실제 판독 결과", 5.5, 3.98, 4.2, 0.26, { fontSize: 10, bold: true, align: "center", valign: "middle" });
+  card(s, 5.5, 4.27, 4.2, 0.36);
+  s.addText(rich(["판매자가 마지막에 확인 → 정확도는 ", ["자동 입력 비율"], " 을 정한다"]), { x: 5.5, y: 4.27, w: 4.2, h: 0.36, fontFace: KR, fontSize: 10.5, color: INK, align: "center", valign: "middle", margin: 0, isTextBox: true });
   strip(s, ["당근은 이미 사진에서 인증마크를 OCR 로 찾는다. 우리는 같은 사진에서 ", ["소비기한을 찾아 날짜로 확정"], " 한다"], 4.75);
-  s.addNotes("적용 대상은 중고거래 플랫폼의 식품 게시글입니다. 이번 추석 연휴에 당근에서 선물세트 거래량이 작년보다 50퍼센트 늘었습니다. 소비기한은 판매자가 손으로 적고 아무도 확인하지 않습니다. 판매자가 날짜면을 찍으면 서버가 읽고, 확신할 때만 날짜 칸을 채웁니다. 판매자는 날짜 확대본을 보며 확인하거나 고칩니다. 게시글에는 판매자 사진에서 읽은 날짜와 남은 일수가 붙고, 기한이 임박하면 알림, 지나면 자동으로 숨겨집니다. 핵심은 판매자가 마지막에 확인한다는 점입니다. 모델이 틀려도 한 번 고치면 끝나고, 확신이 없으면 빈칸이니 지금보다 나빠지지 않습니다. 그래서 정확도는 안전성이 아니라 자동 입력 비율을 정합니다. 당근은 이미 인증마크를 OCR로 찾고 있습니다. 저희는 같은 사진에서 소비기한을 찾아 날짜로 확정합니다.");
+  s.addNotes("적용 대상은 중고거래 플랫폼의 식품 게시글입니다. 이번 추석 연휴에 당근에서 선물세트 거래량이 작년보다 50퍼센트 늘었습니다. 소비기한은 판매자가 손으로 적고 아무도 확인하지 않습니다. 화면을 보시겠습니다. 첫째, 판매자가 날짜면을 찍습니다. 둘째, 서버가 읽고 확신할 때만 날짜 칸을 채웁니다. 판매자는 날짜 확대본을 보며 확인하거나 고칩니다. 셋째, 게시글에는 읽은 날짜와 남은 일수, 날짜 원본이 붙습니다. 이 화면의 날짜는 저희 모델이 팀원이 찍은 사진에서 실제로 읽은 값입니다. 핵심은 판매자가 마지막에 확인한다는 점입니다. 모델이 틀려도 한 번 고치면 끝나고, 확신이 없으면 빈칸이니 지금보다 나빠지지 않습니다. 그래서 정확도는 안전성이 아니라 자동 입력 비율을 정합니다. 당근은 이미 인증마크를 OCR로 찾고 있습니다. 저희는 같은 사진에서 소비기한을 찾아 날짜로 확정합니다.");
 }
 
 // 17. 운영 구조·비용
