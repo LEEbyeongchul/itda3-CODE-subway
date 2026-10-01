@@ -341,19 +341,19 @@ section(5, "도메인 적용과 운영", "중고거래 식품 게시글의 잔�
   const s = content("운영 아키텍처 : ", "서버는 지금, 온디바이스는 다음 단계");
   card(s, 0.3, 1.0, 4.6, 3.35);
   txt(s, "지금 — 서버 추론", 0.45, 1.1, 4.3, 0.3, { fontSize: 13, bold: true, color: RED });
-  txt(s, [{ text: "촬영 → 서버 판독 (판매자가 제목·가격 쓰는 동안)", options: { bullet: true, breakLine: true } },
-          { text: "확신도 0.7 이상 + 10초 안에 읽혀야 자동 입력, 아니면 빈칸", options: { bullet: true, breakLine: true } },
-          { text: "모델 21MB · CPU 전용. GPU·외부 API 없음, 사진은 서버 밖으로 안 나감", options: { bullet: true, breakLine: true } },
-          { text: "서버 1대 사용률 4 ~ 10% — 라인(카테고리) 수십 개로 늘어도 서버 한 대로 충분", options: { bullet: true } }],
+  txt(s, [{ text: "판매자가 제목·가격을 쓰는 동안 서버가 사진을 읽는다", options: { bullet: true, breakLine: true } },
+          { text: "확신도 0.7 이상이고 10초 안에 읽혀야 칸을 채운다. 아니면 빈칸", options: { bullet: true, breakLine: true } },
+          { text: "모델이 21MB라 가볍다. GPU도 외부 API도 필요 없고, 사진은 서버 밖으로 안 나간다", options: { bullet: true, breakLine: true } },
+          { text: "서버 한 대로 충분하다. 지금 쓰는 양은 그중 4 ~ 10%뿐이다", options: { bullet: true } }],
       0.45, 1.46, 4.3, 2.75, { fontSize: 10.3, paraSpaceAfter: 5 });
   card(s, 5.1, 1.0, 4.6, 3.35, PINK);
   txt(s, "다음 — 온디바이스 (폰 자체 추론)", 5.25, 1.1, 4.3, 0.3, { fontSize: 13, bold: true, color: RED });
-  txt(s, [{ text: "아직 해 보지 않았다. 로드맵 2단계로 분리해 뒀다", options: { bullet: true, breakLine: true } },
-          { text: "모델이 21MB로 작아 폰에서 돌릴 여지는 있다고 \"본다\" — 가능성이지 측정값이 아니다", options: { bullet: true, breakLine: true } },
-          { text: "확인해야 할 것 : 폰에서 장당 처리 시간, 배터리 소모, 기종별 편차", options: { bullet: true, breakLine: true } },
-          { text: "되면 서버 비용이 0에 가까워지고, 사진이 폰 밖으로 나가지 않는다는 이점도 커진다", options: { bullet: true } }],
+  txt(s, [{ text: "폰 안에서 직접 돌리는 건 아직 안 해 봤다", options: { bullet: true, breakLine: true } },
+          { text: "모델이 작아서 될 것 같긴 하지만, 그건 추측이지 잰 값이 아니다", options: { bullet: true, breakLine: true } },
+          { text: "폰에서 장당 몇 초가 걸리는지, 배터리는 얼마나 쓰는지부터 재야 한다", options: { bullet: true, breakLine: true } },
+          { text: "되면 서버 비용이 거의 사라지고, 사진도 폰 밖으로 안 나간다", options: { bullet: true } }],
       5.25, 1.46, 4.3, 2.75, { fontSize: 10.3, paraSpaceAfter: 5 });
-  strip(s, ["지금 돌아가는 건 서버 추론 하나뿐이다. ", ["온디바이스는 가능성으로만 적었고, 된다고 말하지 않았다"]], 4.55);
+  strip(s, ["지금 돌아가는 건 서버 추론 하나뿐이다. ", ["온디바이스는 가능성일 뿐, 된다고 말한 적 없다"]], 4.55);
   s.addNotes("운영 아키텍처입니다. 지금은 서버 추론 하나만 돌아갑니다. 모델이 21메가바이트로 작아 폰 안에서 직접 돌리는 온디바이스도 가능할 걸로 보지만, 아직 재 보지 않아 다음 단계로 남겨 뒀습니다.");
 }
 
