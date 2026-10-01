@@ -2,69 +2,55 @@
 <rect width="2928" height="900" fill="white"/>
 <text x="60" y="72" font-size="34" font-weight="bold" fill="#1F2937">소비기한 OCR 파이프라인 아키텍처 — 본선 최종 구성</text>
 <text x="60" y="110" font-size="18" fill="#4B5563">봉인 500장 완전일치 86.2% (필드평균 90.8%) · 4코어 CPU 장당 2.7~4.0초 · 본선 최종 구성 · 모델 총 21MB · 완전 오프라인</text>
-<rect x="60" y="150" width="360" height="330" rx="18" fill="#EEF2F7" stroke="#94A3B8" stroke-width="3"/>
-<text x="80" y="192" font-size="22" font-weight="bold" fill="#111827">입력</text>
-<line x1="80" y1="212" x2="400" y2="212" stroke="#94A3B8" stroke-width="2"/>
-<text x="80" y="250" font-size="18" fill="#1F2937">사진 1장 (낱개 뒷면)</text>
-<text x="80" y="278" font-size="18" fill="#1F2937">EXIF 회전 보정 (8.7%가 90도 회전)</text>
-<text x="80" y="306" font-size="18" fill="#1F2937">긴 변 2,000px 이하로 디코딩 축소</text>
-<line x1="424" y1="315" x2="452" y2="315" stroke="#475569" stroke-width="5"/>
-<polygon points="464,315 448,305 448,325" fill="#475569"/>
-<rect x="468" y="150" width="360" height="330" rx="18" fill="#DCEBFA" stroke="#94A3B8" stroke-width="3"/>
-<text x="488" y="192" font-size="22" font-weight="bold" fill="#111827">① 1차 읽기</text>
-<line x1="488" y1="212" x2="808" y2="212" stroke="#94A3B8" stroke-width="2"/>
-<text x="488" y="250" font-size="18" fill="#1F2937">640px 축소본에서 글자 위치 탐지</text>
-<text x="488" y="278" font-size="18" fill="#1F2937">큰 글자부터 인식, 완전한 날짜 찾으면 잔글씨 생략</text>
-<text x="488" y="306" font-size="18" fill="#1F2937">후보 없음 → 1,024px 재시도</text>
-<text x="488" y="334" font-size="18" fill="#1F2937">그래도 없음 → 도트 인쇄 전처리 후 재시도</text>
-<line x1="832" y1="315" x2="860" y2="315" stroke="#475569" stroke-width="5"/>
-<polygon points="872,315 856,305 856,325" fill="#475569"/>
-<rect x="876" y="150" width="360" height="330" rx="18" fill="#DCEBFA" stroke="#94A3B8" stroke-width="3"/>
-<text x="896" y="192" font-size="22" font-weight="bold" fill="#111827">② 다시 읽기</text>
-<line x1="896" y1="212" x2="1216" y2="212" stroke="#94A3B8" stroke-width="2"/>
-<text x="896" y="250" font-size="18" fill="#1F2937">후보 줄만 원본 해상도로 재인식, 1차와 다수결</text>
-<text x="896" y="278" font-size="18" fill="#1F2937">[본선] 다시 읽은 값이 1차 후보를 지우지 못함</text>
-<text x="896" y="306" font-size="18" fill="#1F2937">[본선] 일(日)이 한 자리면 글자상자 넓혀 재인식</text>
-<text x="896" y="334" font-size="18" fill="#1F2937">[본선] 깨진 줄은 둘 이상 일치할 때만 후보 추가</text>
-<line x1="1240" y1="315" x2="1268" y2="315" stroke="#475569" stroke-width="5"/>
-<polygon points="1280,315 1264,305 1264,325" fill="#475569"/>
-<rect x="1284" y="150" width="360" height="330" rx="18" fill="#E4F1E4" stroke="#94A3B8" stroke-width="3"/>
-<text x="1304" y="192" font-size="22" font-weight="bold" fill="#111827">③ 주변 재탐지 [본선]</text>
-<line x1="1304" y1="212" x2="1624" y2="212" stroke="#94A3B8" stroke-width="2"/>
-<text x="1304" y="250" font-size="18" fill="#1F2937">후보 줄 옆에 비슷한 크기 숫자줄 있을 때만</text>
-<text x="1304" y="278" font-size="18" fill="#1F2937">그 영역만 원본 해상도로 다시 탐지</text>
-<text x="1304" y="306" font-size="18" fill="#1F2937">조건부라 평균 비용 거의 안 늚</text>
-<text x="1304" y="334" font-size="18" fill="#1F2937">병기(제조일+소비기한) 오답의 주 처방</text>
-<line x1="1648" y1="315" x2="1676" y2="315" stroke="#475569" stroke-width="5"/>
-<polygon points="1688,315 1672,305 1672,325" fill="#475569"/>
-<rect x="1692" y="150" width="360" height="330" rx="18" fill="#FBEEDB" stroke="#94A3B8" stroke-width="3"/>
-<text x="1712" y="192" font-size="22" font-weight="bold" fill="#111827">④ 못 읽은 사진 전용</text>
-<line x1="1712" y1="212" x2="2032" y2="212" stroke="#94A3B8" stroke-width="2"/>
-<text x="1712" y="250" font-size="18" fill="#1F2937">파인튜닝 인식기로 재시도 (크롭 정확도 89.8%)</text>
-<text x="1712" y="278" font-size="18" fill="#1F2937">[본선] 작은 사진은 2배 확대 후 재시도</text>
-<text x="1712" y="306" font-size="18" fill="#1F2937">1순위로 쓰면 날짜 아닌 줄을 지어내 기각</text>
-<text x="1712" y="334" font-size="18" fill="#1F2937">못 읽은 사진에만 적용해 부작용 차단</text>
-<line x1="2056" y1="315" x2="2084" y2="315" stroke="#475569" stroke-width="5"/>
-<polygon points="2096,315 2080,305 2080,325" fill="#475569"/>
-<rect x="2100" y="150" width="360" height="330" rx="18" fill="#FBEEDB" stroke="#94A3B8" stroke-width="3"/>
-<text x="2120" y="192" font-size="22" font-weight="bold" fill="#111827">⑤ 해석·선택</text>
-<line x1="2120" y1="212" x2="2440" y2="212" stroke="#94A3B8" stroke-width="2"/>
-<text x="2120" y="250" font-size="18" fill="#1F2937">형식 정규화 (연월일 순서, 2자리 연도 등)</text>
-<text x="2120" y="278" font-size="18" fill="#1F2937">신뢰 등급 → 연도 범위(2017~2031) 검증</text>
-<text x="2120" y="306" font-size="18" fill="#1F2937">같은 등급 안에서 가장 늦은 날짜 선택</text>
-<text x="2120" y="334" font-size="18" fill="#1F2937">9자리 이상 숫자열은 사전에 제거(바코드 등)</text>
-<line x1="2464" y1="315" x2="2492" y2="315" stroke="#475569" stroke-width="5"/>
-<polygon points="2504,315 2488,305 2488,325" fill="#475569"/>
-<rect x="2508" y="150" width="360" height="330" rx="18" fill="#EEF2F7" stroke="#94A3B8" stroke-width="3"/>
-<text x="2528" y="192" font-size="22" font-weight="bold" fill="#111827">출력</text>
-<line x1="2528" y1="212" x2="2848" y2="212" stroke="#94A3B8" stroke-width="2"/>
-<text x="2528" y="250" font-size="18" fill="#1F2937">YYYY-MM-DD</text>
-<text x="2528" y="278" font-size="18" fill="#1F2937">YYYY-MM-NONE (일 없음)</text>
-<text x="2528" y="306" font-size="18" fill="#1F2937">NONE-MM-DD (연도 없음)</text>
-<text x="2528" y="334" font-size="18" fill="#1F2937">NONE (판독 불가)</text>
-<rect x="60" y="516" width="2808" height="64" rx="14" fill="none" stroke="#B45309" stroke-width="3" stroke-dasharray="10,6"/>
-<text x="84" y="554" font-size="20" font-weight="bold" fill="#92400E">시간 예산 가드 (모든 단계를 가로지름) — 최근 20장 속도로 총 소요를 예측해 예산을 넘으면 ①의 재시도 생략 → ②를 생략 → 남은 사진은 NONE 으로 채워 결과 파일을 반드시 만든다</text>
-<text x="60" y="634" font-size="18" fill="#374151">• 채점 제약: GPU 없는 4코어 CPU · 500장 2,500초 · Python 3.10 · 인터넷 차단 · 가중치는 download_weights.sh 로 사전 다운로드 (git 미포함)</text>
-<text x="60" y="666" font-size="18" fill="#374151">• 딥러닝 모델은 탐지기 1개(사전학습) + 인식기 2개(사전학습 + 우리 라벨 파인튜닝)뿐이고 합쳐 약 21MB. 나머지는 전부 규칙. 비용이 큰 단계는 모두 조건부라 대부분의 사진은 ①·②·⑤만 거친다</text>
-<text x="60" y="698" font-size="18" fill="#374151">• 정확도 이력: 예선 제출본 84.2% → 다시읽기 규칙 3개 86.0%대(2,852장 기준) → 본선 추가 규칙·재탐지·확대 재시도 반영 → 본선 최종 86.2% (필드평균 90.8%, 봉인 500장)</text>
+<rect x="60" y="150" width="360" height="210" rx="18" fill="#EEF2F7" stroke="#94A3B8" stroke-width="3"/>
+<text x="80" y="190" font-size="24" font-weight="bold" fill="#111827">입력</text>
+<line x1="80" y1="206" x2="400" y2="206" stroke="#94A3B8" stroke-width="2"/>
+<text x="80" y="240" font-size="21" fill="#1F2937">사진 1장, EXIF로 방향 보정</text>
+<text x="80" y="274" font-size="21" fill="#1F2937">긴 변 2,000px 로 축소</text>
+<line x1="424" y1="255" x2="452" y2="255" stroke="#475569" stroke-width="5"/>
+<polygon points="464,255 448,245 448,265" fill="#475569"/>
+<rect x="468" y="150" width="360" height="210" rx="18" fill="#DCEBFA" stroke="#94A3B8" stroke-width="3"/>
+<text x="488" y="190" font-size="24" font-weight="bold" fill="#111827">① 1차 읽기</text>
+<line x1="488" y1="206" x2="808" y2="206" stroke="#94A3B8" stroke-width="2"/>
+<text x="488" y="240" font-size="21" fill="#1F2937">640px 축소본에서 탐지·인식</text>
+<text x="488" y="274" font-size="21" fill="#1F2937">후보 없으면 1,024px → 도트 전처리</text>
+<line x1="832" y1="255" x2="860" y2="255" stroke="#475569" stroke-width="5"/>
+<polygon points="872,255 856,245 856,265" fill="#475569"/>
+<rect x="876" y="150" width="360" height="210" rx="18" fill="#DCEBFA" stroke="#94A3B8" stroke-width="3"/>
+<text x="896" y="190" font-size="24" font-weight="bold" fill="#111827">② 다시 읽기</text>
+<line x1="896" y1="206" x2="1216" y2="206" stroke="#94A3B8" stroke-width="2"/>
+<text x="896" y="240" font-size="21" fill="#1F2937">후보 줄만 원본 해상도로 재인식</text>
+<text x="896" y="274" font-size="21" fill="#1F2937">[본선] 1차 후보는 지우지 않는다</text>
+<line x1="1240" y1="255" x2="1268" y2="255" stroke="#475569" stroke-width="5"/>
+<polygon points="1280,255 1264,245 1264,265" fill="#475569"/>
+<rect x="1284" y="150" width="360" height="210" rx="18" fill="#E4F1E4" stroke="#94A3B8" stroke-width="3"/>
+<text x="1304" y="190" font-size="24" font-weight="bold" fill="#111827">③ 주변 재탐지 [본선]</text>
+<line x1="1304" y1="206" x2="1624" y2="206" stroke="#94A3B8" stroke-width="2"/>
+<text x="1304" y="240" font-size="21" fill="#1F2937">옆에 비슷한 숫자줄 있을 때만</text>
+<text x="1304" y="274" font-size="21" fill="#1F2937">그 영역만 원본 해상도로 재탐지</text>
+<line x1="1648" y1="255" x2="1676" y2="255" stroke="#475569" stroke-width="5"/>
+<polygon points="1688,255 1672,245 1672,265" fill="#475569"/>
+<rect x="1692" y="150" width="360" height="210" rx="18" fill="#FBEEDB" stroke="#94A3B8" stroke-width="3"/>
+<text x="1712" y="190" font-size="24" font-weight="bold" fill="#111827">④ 못 읽은 사진 전용</text>
+<line x1="1712" y1="206" x2="2032" y2="206" stroke="#94A3B8" stroke-width="2"/>
+<text x="1712" y="240" font-size="21" fill="#1F2937">파인튜닝 인식기로 재시도</text>
+<text x="1712" y="274" font-size="21" fill="#1F2937">[본선] 작은 사진은 2배 확대</text>
+<line x1="2056" y1="255" x2="2084" y2="255" stroke="#475569" stroke-width="5"/>
+<polygon points="2096,255 2080,245 2080,265" fill="#475569"/>
+<rect x="2100" y="150" width="360" height="210" rx="18" fill="#FBEEDB" stroke="#94A3B8" stroke-width="3"/>
+<text x="2120" y="190" font-size="24" font-weight="bold" fill="#111827">⑤ 해석·선택</text>
+<line x1="2120" y1="206" x2="2440" y2="206" stroke="#94A3B8" stroke-width="2"/>
+<text x="2120" y="240" font-size="21" fill="#1F2937">형식 정규화 → 신뢰 등급 → 연도 검증</text>
+<text x="2120" y="274" font-size="21" fill="#1F2937">같은 등급에서 가장 늦은 날짜</text>
+<line x1="2464" y1="255" x2="2492" y2="255" stroke="#475569" stroke-width="5"/>
+<polygon points="2504,255 2488,245 2488,265" fill="#475569"/>
+<rect x="2508" y="150" width="360" height="210" rx="18" fill="#EEF2F7" stroke="#94A3B8" stroke-width="3"/>
+<text x="2528" y="190" font-size="24" font-weight="bold" fill="#111827">출력</text>
+<line x1="2528" y1="206" x2="2848" y2="206" stroke="#94A3B8" stroke-width="2"/>
+<text x="2528" y="240" font-size="21" fill="#1F2937">YYYY-MM-DD · YYYY-MM-NONE</text>
+<text x="2528" y="274" font-size="21" fill="#1F2937">NONE-MM-DD · NONE</text>
+<rect x="60" y="396" width="2808" height="56" rx="14" fill="none" stroke="#B45309" stroke-width="3" stroke-dasharray="10,6"/>
+<text x="84" y="430" font-size="22" font-weight="bold" fill="#92400E">시간 예산 가드 — 예산을 넘으면 재시도를 줄여서라도 500장 전부 결과를 만든다</text>
+<text x="60" y="504" font-size="20" fill="#374151">• 채점 조건: 4코어 CPU · 500장 2,500초 · 인터넷 차단</text>
+<text x="60" y="542" font-size="20" fill="#374151">• 모델은 탐지기 1개 + 인식기 2개, 합쳐 약 21MB — 나머지는 전부 규칙</text>
 </svg>
