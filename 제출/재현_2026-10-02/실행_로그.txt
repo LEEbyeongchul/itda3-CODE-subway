@@ -1,0 +1,89 @@
+### 1단계: 새 venv + pip install (log.txt)
+=== 2026-10-02 15:35:33     시작 ===
+--- 환경 ---
+Microsoft Windows [Version 10.0.26200.9457]
+CPU 논리 코어: 8
+Python 3.11.2
+커밋: e0221f166d34155d1dcd49a41de9f523b2b73863
+--- venv + pip install 시작 15:35:34 ---
+pip install 종료 코드 0
+easyocr==1.7.1
+nbconvert==7.16.4
+numpy==1.26.4
+paddleocr==3.7.0
+paddlepaddle==3.3.1
+paddlex==3.7.2
+pandas==2.2.2
+pillow==10.3.0
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+--- 가중치 다운로드 시작 15:45:22 ---
+
+### 2단계: 가중치 다운로드 + 봉인 500장 Run All, 기본 설정 그대로 (log_final.txt)
+=== 2026-10-02 15:47:04 가중치 단계부터 (pip install 은 log.txt 에서 종료 코드 0) ===
+커밋: e0221f166d34155d1dcd49a41de9f523b2b73863
+--- 가중치 다운로드 15:47:04 (PYTHON=python, SSL_CERT_FILE=certifi: README 7절) ---
+Using CPU. Note: This module is much faster with a GPU.
+Downloading detection model, please wait. This may take several minutes depending upon your network connection.
+C:\Users\user\Desktop\itda\.repro\repo\.venv\Lib\site-packages\paddle\utils\cpp_extension\extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `C:\Users\user\.paddlex\official_models\en_PP-OCRv5_mobile_rec`.[0m
+WARNING: Logging before InitGoogleLogging() is written to STDERR
+I1002 15:47:44.974454 32032 onednn_context.cc:81] oneDNN v3.6.2
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `C:\Users\user\.paddlex\official_models\korean_PP-OCRv5_mobile_rec`.[0m
+  OK  weights/english_g2.pth  (14.4 MB)
+  OK  weights/PP-OCRv5_mobile_det/inference.json  (0.2 MB)
+  OK  weights/PP-OCRv5_mobile_det/inference.pdiparams  (4.5 MB)
+  OK  weights/PP-OCRv5_mobile_det/inference.yml  (0.0 MB)
+  OK  weights/PP-OCRv5_mobile_det/config.json  (0.0 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec/inference.json  (0.2 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec/inference.pdiparams  (7.4 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec/inference.yml  (0.0 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec/config.json  (0.0 MB)
+  OK  weights/korean_PP-OCRv5_mobile_rec/inference.json  (0.2 MB)
+  OK  weights/korean_PP-OCRv5_mobile_rec/inference.pdiparams  (12.7 MB)
+  OK  weights/korean_PP-OCRv5_mobile_rec/inference.yml  (0.1 MB)
+  OK  weights/korean_PP-OCRv5_mobile_rec/config.json  (0.2 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec_ft/inference.json  (0.2 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec_ft/inference.pdiparams  (7.4 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec_ft/inference.yml  (0.0 MB)
+  OK  weights/en_PP-OCRv5_mobile_rec_ft/config.json  (0.0 MB)
+      휠 opencv_python_headless-4.10.0.84-cp37-abi3-win_amd64.whl → weights\cv2_headless/ (cv2, opencv_python_headless-4.10.0.84.dist-info)
+  OK  weights/cv2_headless/cv2  (libGL 없는 서버용 예비 OpenCV)
+가중치 준비 완료. 이제 predict.ipynb 는 오프라인으로 실행 가능하다.
+download_weights 종료 코드 0
+--- 추론 시작 15:47:55 (ITDA_THREADS=4: 채점 서버 4코어 흉내) ---
+[NbConvertApp] Converting notebook predict.ipynb to notebook
+C:\Users\user\Desktop\itda\.repro\repo\.venv\Lib\site-packages\nbformat\validator.py:434: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.
+  _validate(nbdict, ref, version, version_minor, relax_add_props)
+C:\Users\user\Desktop\itda\.repro\repo\.venv\Lib\site-packages\zmq\_future.py:718: RuntimeWarning: Proactor event loop does not implement add_reader family of methods required for zmq. Registering an additional selector thread for add_reader support via tornado. Use `asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())` to avoid this warning.
+WARNING: Logging before InitGoogleLogging() is written to STDERR
+I1002 15:48:30.084579 22760 onednn_context.cc:81] oneDNN v3.6.2
+[NbConvertApp] Writing 114457 bytes to C:\Users\user\Desktop\itda\.repro\executed.ipynb
+real	22m56.933s
+user	0m0.015s
+sys	0m0.031s
+nbconvert 종료 코드 0
+--- 추론 끝 16:10:52 ---
+501 /c/Users/user/Desktop/itda/.repro/submission500_repro.csv
+=== 2026-10-02 16:10:52 전체 끝 ===
+
+### 노트북 출력 (executed.ipynb 의 print)
+parse_dates 자가검증 통과
+인식기: 사전학습 1순위 + NONE 시 파인튜닝(en_PP-OCRv5_mobile_rec_ft) 폴백
+사다리 (640, 1024) · 탐지 리사이즈 기본(resize_long 960) · box_thresh 0.6
+로드 완료 (offline): 탐지 PaddleOCR PP-OCRv5_mobile_det + 인식 PaddleOCR en_PP-OCRv5_mobile_rec
+입력 500장  (C:/Users/user/Desktop/itda/.repro/input)
+[50/500] 127s 경과 · 장당 2.54s · 후보없음 0 · 오류 0
+[GUARD] 86장 시점 예상 총 소요 2046s > 예산 2000s → 경량 1단계 (최근 20장 평균 4.30s/장)
+[100/500] 307s 경과 · 장당 3.07s · 후보없음 2 · 오류 0
+[150/500] 430s 경과 · 장당 2.87s · 후보없음 11 · 오류 0
+[200/500] 591s 경과 · 장당 2.95s · 후보없음 20 · 오류 0
+[250/500] 724s 경과 · 장당 2.90s · 후보없음 22 · 오류 0
+[300/500] 830s 경과 · 장당 2.77s · 후보없음 25 · 오류 0
+[350/500] 981s 경과 · 장당 2.80s · 후보없음 33 · 오류 0
+[400/500] 1139s 경과 · 장당 2.85s · 후보없음 38 · 오류 0
+[450/500] 1243s 경과 · 장당 2.76s · 후보없음 45 · 오류 0
+[500/500] 1340s 경과 · 장당 2.68s · 후보없음 54 · 오류 0
+Saved 500 rows → C:/Users/user/Desktop/itda/.repro/submission500_repro.csv
+총 1339.5s · 장당 2.68s · 후보없음 54 · 2패스 채택 359 · 오류 0
+패턴 분포: {'YYYY': 276, 'YY': 44, 'MMDD': 11, 'YYMM': 1, 'DMY4': 47, 'YMD_GLUED': 7, 'SP_DMY': 4, 'CMP6_DMY': 3, 'YY_TAIL': 9, 'CMP': 1, 'YYYYMM': 4, 'YYMM_GLUE': 4, 'CMP6_YMD': 2, 'MON_DY': 7, 'MMYYYY': 10, 'EXTEND': 1, 'YY_LEAD0': 1, 'D_MON_Y': 7, 'MM_YY': 1, 'DDMMYY': 6}

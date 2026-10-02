@@ -1,0 +1,35 @@
+### 3단계: 같은 venv·가중치, 시간 가드만 끔 (ITDA_TIME_BUDGET=100000, 팀 측정 실행과 같은 조건)
+=== 2026-10-02 16:11:38 가드 끔 재실행 · 커밋 e0221f166d34155d1dcd49a41de9f523b2b73863 ===
+[NbConvertApp] Converting notebook predict.ipynb to notebook
+C:\Users\user\Desktop\itda\.repro\repo\.venv\Lib\site-packages\nbformat\validator.py:434: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.
+  _validate(nbdict, ref, version, version_minor, relax_add_props)
+C:\Users\user\Desktop\itda\.repro\repo\.venv\Lib\site-packages\zmq\_future.py:718: RuntimeWarning: Proactor event loop does not implement add_reader family of methods required for zmq. Registering an additional selector thread for add_reader support via tornado. Use `asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())` to avoid this warning.
+WARNING: Logging before InitGoogleLogging() is written to STDERR
+I1002 16:11:55.664376 31832 onednn_context.cc:81] oneDNN v3.6.2
+[NbConvertApp] Writing 114403 bytes to C:\Users\user\Desktop\itda\.repro\executed_noguard.ipynb
+real	26m59.162s
+user	0m0.031s
+sys	0m0.047s
+nbconvert 종료 코드 0
+501 /c/Users/user/Desktop/itda/.repro/submission500_noguard.csv
+=== 2026-10-02 16:38:37 끝 ===
+
+### 노트북 출력 (executed.ipynb 의 print)
+parse_dates 자가검증 통과
+인식기: 사전학습 1순위 + NONE 시 파인튜닝(en_PP-OCRv5_mobile_rec_ft) 폴백
+사다리 (640, 1024) · 탐지 리사이즈 기본(resize_long 960) · box_thresh 0.6
+로드 완료 (offline): 탐지 PaddleOCR PP-OCRv5_mobile_det + 인식 PaddleOCR en_PP-OCRv5_mobile_rec
+입력 500장  (C:/Users/user/Desktop/itda/.repro/input)
+[50/500] 107s 경과 · 장당 2.13s · 후보없음 0 · 오류 0
+[100/500] 298s 경과 · 장당 2.98s · 후보없음 1 · 오류 0
+[150/500] 474s 경과 · 장당 3.16s · 후보없음 2 · 오류 0
+[200/500] 667s 경과 · 장당 3.34s · 후보없음 5 · 오류 0
+[250/500] 808s 경과 · 장당 3.23s · 후보없음 6 · 오류 0
+[300/500] 920s 경과 · 장당 3.07s · 후보없음 6 · 오류 0
+[350/500] 1084s 경과 · 장당 3.10s · 후보없음 10 · 오류 0
+[400/500] 1249s 경과 · 장당 3.12s · 후보없음 11 · 오류 0
+[450/500] 1429s 경과 · 장당 3.18s · 후보없음 14 · 오류 0
+[500/500] 1599s 경과 · 장당 3.20s · 후보없음 15 · 오류 0
+Saved 500 rows → C:/Users/user/Desktop/itda/.repro/submission500_noguard.csv
+총 1599.4s · 장당 3.20s · 후보없음 15 · 2패스 채택 383 · 오류 0
+패턴 분포: {'YYYY': 291, 'YY': 44, 'MMDD': 14, 'YYMM': 1, 'DMY4': 49, 'YMD_GLUED': 6, 'SP_DMY': 8, 'CMP6_DMY': 6, 'YY_TAIL': 8, 'CMP': 4, 'YYYYMM': 6, 'DDMMYY': 8, 'YYMM_GLUE': 5, 'CMP6_YMD': 3, 'MON_DY': 9, 'MMYYYY': 11, 'YYMM_DAYLA': 1, 'EXTEND': 2, 'YY_LEAD0': 1, 'D_MON_Y': 7, 'MM_YY': 1}
