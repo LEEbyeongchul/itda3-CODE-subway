@@ -1,4 +1,4 @@
-"""파이프라인 아키텍처 구조도를 PNG(보고서·발표용)와 SVG(편집용)로 그린다. 본선 최종 구성 기준(2026-09-29).
+"""파이프라인 아키텍처 구조도를 PNG(보고서·발표용)와 SVG(편집용)로 그린다. 본선 최종 구성 기준(2026-09-29). 10/2: ② 주변 재탐지 → ③ 다시 읽기로 순서를 predict.ipynb 실행 순서에 맞춤.
 A4 세로 비율(1:1.414)에 맞춰 단계를 세로로 쌓는다 — 보고서(A4 세로)에 그대로 끼워 넣기 위함.
 
     python notebooks/draw_architecture.py            # → docs/img/architecture.png, architecture.svg
@@ -8,6 +8,8 @@ import argparse, os
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 맑은 고딕은 같은 크기에서 글자가 아래로 더 내려와 상자 테두리에 닿는다 → PNG 본문만 위로 올린다 (맥 글꼴은 0)
+BODY_DY = -7 if os.path.exists("C:/Windows/Fonts/malgun.ttf") else 0
 
 
 def _font(regular_idx, size):
@@ -30,8 +32,8 @@ a = ap.parse_args()
 STAGES = [
     ("입력", ["사진 1장, EXIF로 방향 보정 · 긴 변 2,000px 로 축소"], "#EEF2F7"),
     ("① 1차 읽기", ["640px 축소본에서 탐지·인식, 후보 없으면 1,024px → 도트 전처리"], "#DCEBFA"),
-    ("② 다시 읽기", ["후보 줄만 원본 해상도로 재인식. [본선] 1차 후보는 지우지 않는다"], "#DCEBFA"),
-    ("③ 주변 재탐지 [본선]", ["옆에 비슷한 숫자줄 있을 때만 그 영역을 원본 해상도로 재탐지"], "#E4F1E4"),
+    ("② 주변 재탐지 [본선]", ["옆에 비슷한 숫자줄 있을 때만 그 영역을 원본 해상도로 재탐지해 후보에 보탠다"], "#E4F1E4"),
+    ("③ 다시 읽기", ["후보 줄만 원본 해상도로 재인식. [본선] 1차 후보는 지우지 않는다"], "#DCEBFA"),
     ("④ 못 읽은 사진 전용", ["파인튜닝 인식기로 재시도. [본선] 작은 사진은 2배 확대"], "#FBEEDB"),
     ("⑤ 해석·선택", ["형식 정규화 → 신뢰 등급 → 연도 검증 → 같은 등급에서 가장 늦은 날짜"], "#FBEEDB"),
     ("출력", ["YYYY-MM-DD · YYYY-MM-NONE · NONE-MM-DD · NONE"], "#EEF2F7"),
@@ -86,7 +88,7 @@ def box(y, head, body, color):
     svg.append(f'<line x1="{MARGIN+22}" y1="{div_y}" x2="{MARGIN+BOX_W-22}" y2="{div_y}" stroke="#94A3B8" stroke-width="2"/>')
     yy = div_y + 24
     for sub in body_lines:
-        d.text((MARGIN + 22, yy), sub, font=f_body, fill="#1F2937")
+        d.text((MARGIN + 22, yy + BODY_DY), sub, font=f_body, fill="#1F2937")
         svg.append(f'<text x="{MARGIN+22}" y="{yy+19}" font-size="19" fill="#1F2937">{sub}</text>')
         yy += 30
     return y + h
