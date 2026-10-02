@@ -1,96 +1,157 @@
-"""파이프라인 아키텍처 구조도를 PNG(요약서·발표용)와 SVG(편집용)로 그린다.
+"""파이프라인 아키텍처 구조도를 PNG(보고서·발표용)와 SVG(편집용)로 그린다. 본선 최종 구성 기준(2026-09-29).
+A4 세로 비율(1:1.414)에 맞춰 단계를 세로로 쌓는다 — 보고서(A4 세로)에 그대로 끼워 넣기 위함.
 
     python notebooks/draw_architecture.py            # → docs/img/architecture.png, architecture.svg
-    python notebooks/draw_architecture.py --acc "73.6%" --speed "1.8초"   # 수치 갱신
+    python notebooks/draw_architecture.py --acc "86.2%" --field "90.8%" --speed "2.7~4.0초"   # 수치 갱신
 """
 import argparse, os
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FONT = "C:/Windows/Fonts/malgun.ttf" if os.path.exists("C:/Windows/Fonts/malgun.ttf") else None
-FONT_B = "C:/Windows/Fonts/malgunbd.ttf" if os.path.exists("C:/Windows/Fonts/malgunbd.ttf") else FONT
+
+
+def _font(regular_idx, size):
+    if os.path.exists("C:/Windows/Fonts/malgun.ttf"):
+        path = "C:/Windows/Fonts/malgunbd.ttf" if regular_idx == 6 else "C:/Windows/Fonts/malgun.ttf"
+        return ImageFont.truetype(path, size)
+    if os.path.exists("/System/Library/Fonts/AppleSDGothicNeo.ttc"):
+        return ImageFont.truetype("/System/Library/Fonts/AppleSDGothicNeo.ttc", size, index=regular_idx)
+    return ImageFont.load_default()
+
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--acc", default="81.8%")
-ap.add_argument("--speed", default="1.9초")
-ap.add_argument("--note", default="사전학습 모델 그대로 (파인튜닝 전)")
+ap.add_argument("--acc", default="86.2%", help="봉인 500장 완전일치")
+ap.add_argument("--field", default="90.8%", help="봉인 500장 필드평균")
+ap.add_argument("--speed", default="2.7~4.0초", help="개발 PC 4스레드 장당 (한도 2,500초의 55~79%)")
+ap.add_argument("--note", default="본선 최종 구성 · 모델 총 21MB · 완전 오프라인")
 a = ap.parse_args()
 
+# 본선보고서 3-1 텍스트 다이어그램의 핵심만 줄였다. [본선] = 예선 이후 추가된 처리.
 STAGES = [
-    ("입력", ["원본 사진 (3,352장 배포)", "EXIF 회전 보정", "긴 변 640px 축소 → 없으면 1024px", "그래도 없으면 도트매트릭스 폴백: 침식·블러로 점을 이어 재시도"], "#EEF2F7"),
-    ("① 텍스트 탐지", ["PaddleOCR PP-OCRv5 mobile det", "약 5 MB · CPU 전용", "4코어 640px 기준 약 0.3초", "모든 글자 박스 검출"], "#DCEBFA"),
-    ("② 텍스트 인식", ["PaddleOCR PP-OCRv5 mobile rec (en)", "약 8 MB · 숫자·영문·구분자", "글자 크기순 8개 배치 인식", "연도 포함 날짜 찾으면 잔글씨 생략"], "#DCEBFA"),
-    ("③ 2패스 재인식", ["후보 줄의 단어 박스만", "원본 해상도와 1024px 두 스케일로 재인식", "1패스까지 셋이 투표, 두 표 이상만 채택", "자릿수 하나 오독 보정"], "#E4F1E4"),
-    ("④ 후처리 규칙", ["오독 복원 2O27→2027, 0ct→Oct", "정규식 4단계 (완전 날짜 → 공백·6자리 → 연월 → 월일)", "연도 2017~2031 검증, 긴 숫자열 제거", "신뢰 등급 우선 → 가장 늦은 날짜"], "#FBEEDB"),
-    ("출력", ["YYYY-MM-DD", "NONE-MM-DD (연도 없음)", "YYYY-MM-NONE (일 없음)", "NONE (판독 불가)"], "#EEF2F7"),
+    ("입력", ["사진 1장, EXIF로 방향 보정 · 긴 변 2,000px 로 축소"], "#EEF2F7"),
+    ("① 1차 읽기", ["640px 축소본에서 탐지·인식, 후보 없으면 1,024px → 도트 전처리"], "#DCEBFA"),
+    ("② 다시 읽기", ["후보 줄만 원본 해상도로 재인식. [본선] 1차 후보는 지우지 않는다"], "#DCEBFA"),
+    ("③ 주변 재탐지 [본선]", ["옆에 비슷한 숫자줄 있을 때만 그 영역을 원본 해상도로 재탐지"], "#E4F1E4"),
+    ("④ 못 읽은 사진 전용", ["파인튜닝 인식기로 재시도. [본선] 작은 사진은 2배 확대"], "#FBEEDB"),
+    ("⑤ 해석·선택", ["형식 정규화 → 신뢰 등급 → 연도 검증 → 같은 등급에서 가장 늦은 날짜"], "#FBEEDB"),
+    ("출력", ["YYYY-MM-DD · YYYY-MM-NONE · NONE-MM-DD · NONE"], "#EEF2F7"),
 ]
 
-W, H = 2600, 760
-BOX_W, BOX_H, GAP, TOP = 380, 330, 52, 150
-img = Image.new("RGB", (W, H), "white")
+GUARD = "시간 예산 가드 — 예산을 넘으면 재시도를 줄여서라도 500장 전부 결과를 만든다"
+A4_RATIO = 297 / 210  # 세로 / 가로
+
+MARGIN, TOP, ROW_GAP = 70, 160, 50
+W = 1040
+BOX_W = W - MARGIN * 2
+CANVAS_H = 2400  # 넉넉히 잡고 끝에서 실제 내용 높이로 자른다
+img = Image.new("RGB", (W, CANVAS_H), "white")
 d = ImageDraw.Draw(img)
-f_title = ImageFont.truetype(FONT_B, 34) if FONT_B else ImageFont.load_default()
-f_head = ImageFont.truetype(FONT_B, 26) if FONT_B else ImageFont.load_default()
-f_body = ImageFont.truetype(FONT, 20) if FONT else ImageFont.load_default()
-f_small = ImageFont.truetype(FONT, 19) if FONT else ImageFont.load_default()
+f_title = _font(6, 34)
+f_head = _font(6, 25)
+f_body = _font(0, 21)
+f_small = _font(0, 19)
+f_guard = _font(6, 21)
 
-d.text((60, 40), "소비기한 OCR 파이프라인 아키텍처", font=f_title, fill="#1F2937")
-d.text((60, 92), f"측정용 500장 정확도 {a.acc} · 4코어 CPU 장당 {a.speed} · 인터넷 차단 환경 · {a.note}", font=f_small, fill="#4B5563")
-
-x0 = (W - (len(STAGES) * BOX_W + (len(STAGES) - 1) * GAP)) // 2
-svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif">',
-       f'<rect width="{W}" height="{H}" fill="white"/>',
-       f'<text x="60" y="72" font-size="34" font-weight="bold" fill="#1F2937">소비기한 OCR 파이프라인 아키텍처</text>',
-       f'<text x="60" y="110" font-size="19" fill="#4B5563">측정용 500장 정확도 {a.acc} · 4코어 CPU 장당 {a.speed} · 인터넷 차단 환경 · {a.note}</text>']
 
 def wrap(text, font, width):
     words, lines, cur = text.split(" "), [], ""
-    for w in words:
-        t = (cur + " " + w).strip()
+    for wd in words:
+        t = (cur + " " + wd).strip()
         if d.textlength(t, font=font) <= width:
             cur = t
         else:
-            lines.append(cur); cur = w
+            lines.append(cur); cur = wd
     if cur:
         lines.append(cur)
     return lines
 
+
+svg = []
+
+
+def box(y, head, body, color):
+    """한 단계 상자를 그리고 다음 y 좌표를 반환한다."""
+    head_lines = wrap(head, f_head, BOX_W - 40)
+    body_lines = [sub for line in body for sub in wrap(line, f_body, BOX_W - 44)]
+    h = 18 + len(head_lines) * 30 + 14 + len(body_lines) * 30 + 16
+    d.rounded_rectangle([MARGIN, y, MARGIN + BOX_W, y + h], radius=16, fill=color, outline="#94A3B8", width=3)
+    svg.append(f'<rect x="{MARGIN}" y="{y}" width="{BOX_W}" height="{h}" rx="16" fill="{color}" stroke="#94A3B8" stroke-width="3"/>')
+    hy = y + 18
+    for sub in head_lines:
+        d.text((MARGIN + 22, hy), sub, font=f_head, fill="#111827")
+        svg.append(f'<text x="{MARGIN+22}" y="{hy+23}" font-size="23" font-weight="bold" fill="#111827">{sub}</text>')
+        hy += 30
+    div_y = hy + 7
+    d.line([MARGIN + 22, div_y, MARGIN + BOX_W - 22, div_y], fill="#94A3B8", width=2)
+    svg.append(f'<line x1="{MARGIN+22}" y1="{div_y}" x2="{MARGIN+BOX_W-22}" y2="{div_y}" stroke="#94A3B8" stroke-width="2"/>')
+    yy = div_y + 24
+    for sub in body_lines:
+        d.text((MARGIN + 22, yy), sub, font=f_body, fill="#1F2937")
+        svg.append(f'<text x="{MARGIN+22}" y="{yy+19}" font-size="19" fill="#1F2937">{sub}</text>')
+        yy += 30
+    return y + h
+
+
+def down_arrow(y_from, y_to):
+    cx = MARGIN + BOX_W // 2
+    d.line([cx, y_from + 6, cx, y_to - 16], fill="#475569", width=5)
+    d.polygon([(cx, y_to - 2), (cx - 10, y_to - 18), (cx + 10, y_to - 18)], fill="#475569")
+    svg.append(f'<line x1="{cx}" y1="{y_from+6}" x2="{cx}" y2="{y_to-16}" stroke="#475569" stroke-width="5"/>')
+    svg.append(f'<polygon points="{cx},{y_to-2} {cx-10},{y_to-18} {cx+10},{y_to-18}" fill="#475569"/>')
+
+
+svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="PLACEHOLDER" font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif">')
+svg.append('<rect width="100%" height="100%" fill="white"/>')
+title = "소비기한 OCR 파이프라인 — 본선 최종 구성"
+subtitle = f"봉인 500장 완전일치 {a.acc} (필드평균 {a.field}) · 4코어 CPU 장당 {a.speed}"
+subtitle2 = a.note
+d.text((MARGIN, 36), title, font=f_title, fill="#1F2937")
+d.text((MARGIN, 86), subtitle, font=f_small, fill="#4B5563")
+d.text((MARGIN, 114), subtitle2, font=f_small, fill="#4B5563")
+svg.append(f'<text x="{MARGIN}" y="68" font-size="32" font-weight="bold" fill="#1F2937">{title}</text>')
+svg.append(f'<text x="{MARGIN}" y="103" font-size="19" fill="#4B5563">{subtitle}</text>')
+svg.append(f'<text x="{MARGIN}" y="131" font-size="19" fill="#4B5563">{subtitle2}</text>')
+
+y = TOP
 for i, (head, body, color) in enumerate(STAGES):
-    x = x0 + i * (BOX_W + GAP)
-    y = TOP
-    d.rounded_rectangle([x, y, x + BOX_W, y + BOX_H], radius=18, fill=color, outline="#94A3B8", width=3)
-    d.text((x + 22, y + 18), head, font=f_head, fill="#111827")
-    d.line([x + 22, y + 60, x + BOX_W - 22, y + 60], fill="#94A3B8", width=2)
-    yy = y + 76
-    for line in body:
-        for sub in wrap(line, f_body, BOX_W - 44):
-            d.text((x + 22, yy), sub, font=f_body, fill="#1F2937")
-            yy += 30
-    svg.append(f'<rect x="{x}" y="{y}" width="{BOX_W}" height="{BOX_H}" rx="18" fill="{color}" stroke="#94A3B8" stroke-width="3"/>')
-    svg.append(f'<text x="{x+22}" y="{y+46}" font-size="26" font-weight="bold" fill="#111827">{head}</text>')
-    svg.append(f'<line x1="{x+22}" y1="{y+60}" x2="{x+BOX_W-22}" y2="{y+60}" stroke="#94A3B8" stroke-width="2"/>')
-    yy = y + 100
-    for line in body:
-        svg.append(f'<text x="{x+22}" y="{yy}" font-size="20" fill="#1F2937">{line}</text>'); yy += 30
+    y_end = box(y, head, body, color)
     if i < len(STAGES) - 1:
-        ax0, ax1, ay = x + BOX_W + 6, x + BOX_W + GAP - 6, y + BOX_H // 2
-        d.line([ax0, ay, ax1 - 12, ay], fill="#475569", width=5)
-        d.polygon([(ax1, ay), (ax1 - 16, ay - 10), (ax1 - 16, ay + 10)], fill="#475569")
-        svg.append(f'<line x1="{ax0}" y1="{ay}" x2="{ax1-12}" y2="{ay}" stroke="#475569" stroke-width="5"/>')
-        svg.append(f'<polygon points="{ax1},{ay} {ax1-16},{ay-10} {ax1-16},{ay+10}" fill="#475569"/>')
+        down_arrow(y_end, y_end + ROW_GAP)
+    y = y_end + ROW_GAP
+
+# 시간 예산 가드
+gy = y + 10
+gh = 0
+guard_lines = wrap(GUARD, f_guard, BOX_W - 48)
+gh = 20 + len(guard_lines) * 28 + 16
+d.rounded_rectangle([MARGIN, gy, MARGIN + BOX_W, gy + gh], radius=14, outline="#B45309", width=3)
+svg.append(f'<rect x="{MARGIN}" y="{gy}" width="{BOX_W}" height="{gh}" rx="14" fill="none" stroke="#B45309" stroke-width="3" stroke-dasharray="10,6"/>')
+gyy = gy + 20
+for sub in guard_lines:
+    d.text((MARGIN + 22, gyy), sub, font=f_guard, fill="#92400E")
+    svg.append(f'<text x="{MARGIN+22}" y="{gyy+19}" font-size="21" font-weight="bold" fill="#92400E">{sub}</text>')
+    gyy += 28
 
 # 하단 설명
 notes = [
-    "채점 제약: GPU 없는 4코어 CPU · 500장 · 셀 타임아웃 2,400초 · Python 3.10 · 가중치는 download_weights.sh 로 사전 다운로드 (git 미포함)",
-    "날짜 해석 규칙(연도 위치, 2자리 연도, 공백 구분, 영문 월, 키워드)은 요약서 규칙표와 동일하게 predict.ipynb 파서에 구현 · 라벨링 도구와 같은 규칙",
-    "성능 이력: EasyOCR 원본 39.1% → 규칙 수정 44.4% → 인식기 교체 60.9% → 탐지기 교체 67.7% (133장) → 신뢰 등급 선택 73.6% → 도트매트릭스 폴백 77.0% → 2패스 다수결 78.4% → 규칙 v5 80.6% → 일 손실 규칙 81.8% (측정 500장)",
+    "채점 조건: 4코어 CPU · 500장 2,500초 · 인터넷 차단",
+    "모델은 탐지기 1개 + 인식기 2개, 합쳐 약 21MB — 나머지는 전부 규칙",
 ]
-yy = TOP + BOX_H + 60
+yy = gy + gh + 30
 for n in notes:
-    d.text((60, yy), "• " + n, font=f_small, fill="#374151"); svg.append(f'<text x="60" y="{yy+17}" font-size="19" fill="#374151">• {n}</text>'); yy += 34
+    for sub in wrap("• " + n, f_small, BOX_W):
+        d.text((MARGIN, yy), sub, font=f_small, fill="#374151")
+        svg.append(f'<text x="{MARGIN}" y="{yy+15}" font-size="19" fill="#374151">{sub}</text>')
+        yy += 28
+    yy += 6
+
+H = yy + 30
+svg[0] = svg[0].replace("PLACEHOLDER", str(H))
 svg.append("</svg>")
 
+print(f"→ 캔버스 {W}x{H}, 비율(가로/세로) {W/H:.3f} (A4 세로 목표 {1/A4_RATIO:.3f})")
+
 out = os.path.join(ROOT, "docs", "img"); os.makedirs(out, exist_ok=True)
-img.save(os.path.join(out, "architecture.png"))
+img.crop((0, 0, W, H)).save(os.path.join(out, "architecture.png"))
 open(os.path.join(out, "architecture.svg"), "w", encoding="utf-8").write("\n".join(svg))
 print("→ docs/img/architecture.png, architecture.svg")
